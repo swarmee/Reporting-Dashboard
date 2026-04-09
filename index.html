@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROGI – Daily UTC Time Reporting</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+<!-- ── Loading Overlay ──────────────────────────────────── -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p class="loading-text">Loading ROGI dashboard&hellip;</p>
+</div>
+
+<!-- ── Error Overlay ────────────────────────────────────── -->
+<div id="error-overlay">
+  <div class="error-icon">⚠️</div>
+  <p class="error-message">
+    Failed to load reporting data.<br />
+    <span id="error-detail"></span>
+  </p>
+</div>
+
+<!-- ── Header ────────────────────────────────────────────── -->
+<header class="dashboard-header">
+  <div class="header-brand">
+    <span class="brand-title">ROGI</span>
+    <span class="brand-subtitle">Daily UTC Time Reporting</span>
+  </div>
+  <div class="header-meta">
+    <div class="meta-item">
+      <span class="meta-label">Generated</span>
+      <span class="meta-value" id="generated-dt">—</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Data Period</span>
+      <span class="meta-value" id="data-period">—</span>
+    </div>
+  </div>
+</header>
+
+<!-- ── Main Dashboard Grid ───────────────────────────────── -->
+<main class="dashboard-main">
+
+  <!-- Row 1: Total Counts | Daily Stats -->
+
+  <!-- Panel 1 – Total Reporting Counts -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📊</span>
+      <h2 class="panel-title">Total Reporting Counts</h2>
+    </div>
+    <div class="panel-body">
+      <div class="metrics-grid">
+
+        <div class="metric-card">
+          <span class="metric-label">Total (All Time)</span>
+          <span class="metric-value highlight" id="metric-total-all">—</span>
+          <span class="metric-sub" id="metric-total-all-full">—</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">This Year</span>
+          <span class="metric-value" id="metric-total-yr">—</span>
+          <span class="metric-sub" id="metric-total-yr-full">—</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">This Month</span>
+          <span class="metric-value" id="metric-total-mon">—</span>
+          <span class="metric-sub" id="metric-total-mon-full">—</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 2 – Daily Reporting Stats -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📈</span>
+      <h2 class="panel-title">Daily Reporting Stats</h2>
+    </div>
+    <div class="panel-body">
+      <div class="stats-table-container">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th style="text-align:left">Period</th>
+              <th>Average</th>
+              <th>Maximum</th>
+              <th>Minimum</th>
+              <th>Median</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-header">All Time</td>
+              <td id="row-all-avg">—</td>
+              <td id="row-all-max">—</td>
+              <td id="row-all-min">—</td>
+              <td id="row-all-med">—</td>
+            </tr>
+            <tr>
+              <td class="row-header">Last 12 Months</td>
+              <td id="row-365-avg">—</td>
+              <td id="row-365-max">—</td>
+              <td id="row-365-min">—</td>
+              <td id="row-365-med">—</td>
+            </tr>
+            <tr>
+              <td class="row-header">Last 30 Days</td>
+              <td id="row-30-avg">—</td>
+              <td id="row-30-max">—</td>
+              <td id="row-30-min">—</td>
+              <td id="row-30-med">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 2: Growth Metrics | Day-of-Week Chart -->
+
+  <!-- Panel 3 – Reporting Growth Metrics -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🚀</span>
+      <h2 class="panel-title">Reporting Growth Metrics</h2>
+    </div>
+    <div class="panel-body">
+      <div class="growth-grid">
+
+        <div class="growth-card">
+          <span class="growth-label">Last 12 Months vs Previous 12 Months</span>
+          <span class="growth-value neutral" id="g12-pct">—</span>
+          <div class="growth-detail">
+            Recent:&nbsp;&nbsp;<strong id="g12-recent">—</strong><br />
+            Previous: <strong id="g12-previous">—</strong>
+          </div>
+        </div>
+
+        <div class="growth-card">
+          <span class="growth-label">Last 30 Days vs Previous 30 Days</span>
+          <span class="growth-value neutral" id="g1m-pct">—</span>
+          <div class="growth-detail">
+            Recent:&nbsp;&nbsp;<strong id="g1m-recent">—</strong><br />
+            Previous: <strong id="g1m-previous">—</strong>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 4 – Day-of-Week Average (last 365 days) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📅</span>
+      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days</h2>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-dow"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 3: Cumulative Yearly Chart | Non-cumulative Yearly Chart -->
+
+  <!-- Panel 5 – Cumulative Yearly Reporting Chart -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📉</span>
+      <h2 class="panel-title">Cumulative Yearly Reporting</h2>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-cum-yearly"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 6 – Non-cumulative Yearly Reporting Chart -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📊</span>
+      <h2 class="panel-title">Annual Reporting Volume</h2>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-noncum-yearly"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 4: Cumulative Table | Non-cumulative Table -->
+
+  <!-- Panel 7 – Cumulative Yearly Table -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Cumulative Yearly Table</h2>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Cumulative Total</th>
+              <th>Regression Forecast</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-cum"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 8 – Non-cumulative Yearly Table -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Annual Reporting Table</h2>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Annual Total</th>
+              <th>Regression Forecast</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-noncum"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 5: Weekly Chart | Weekly Table -->
+
+  <!-- Panel 9 – Weekly Reporting Chart (last 2 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📆</span>
+      <h2 class="panel-title">Weekly Reporting — Last 2 Years</h2>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-weekly"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 10 – Weekly Table -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Weekly Reporting Table — Last 2 Years</h2>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ISO Week</th>
+              <th>Weekly Count</th>
+              <th>4-Week Moving Avg</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-weekly"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 6: Monthly Chart | Monthly Table -->
+
+  <!-- Panel 11 – Monthly Reporting Chart (last 2 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗓️</span>
+      <h2 class="panel-title">Monthly Reporting — Last 2 Years</h2>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-monthly"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 12 – Monthly Table -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Monthly Reporting Table — Last 2 Years</h2>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Monthly Count</th>
+              <th>3-Month Moving Avg</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-monthly"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 7: Pie Chart (full width) -->
+
+  <!-- Panel 13 – Pie Chart: Total reporting per year -->
+  <section class="panel panel-full">
+    <div class="panel-header">
+      <span class="panel-icon">🥧</span>
+      <h2 class="panel-title">Total Reporting Share per Year</h2>
+    </div>
+    <div class="panel-body">
+      <div class="pie-chart-container">
+        <div class="pie-canvas-wrap">
+          <canvas id="chart-pie"></canvas>
+        </div>
+        <div class="pie-legend" id="pie-legend"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── Footer ────────────────────────────────────────────── -->
+<footer class="dashboard-footer">
+  R-O-G-I reversed = I-G-O-R
+</footer>
+
+<!-- ── Scripts ───────────────────────────────────────────── -->
+<script src="assets/js/chart.umd.min.js"></script>
+<script src="assets/js/dashboard.js"></script>
+
+</body>
+</html>
