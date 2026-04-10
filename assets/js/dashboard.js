@@ -7,9 +7,6 @@
 
 // ── Configuration ─────────────────────────────────────────
 const CONFIG = {
-  // Auto-detect: use relative URL when served from the same origin
-  // (works for http://api/  and  http://localhost:<port>/)
-  // Override here if needed, e.g. 'http://api' or 'http://localhost:8080'
   API_BASE: (() => {
     const h = window.location.hostname;
     if (h === 'api' || h === 'localhost' || h === '127.0.0.1') return '';
@@ -17,9 +14,11 @@ const CONFIG = {
   })(),
   FROM_DATE: '1970-01-01',
   MAX_X_LABELS: 10,
-  REGRESSION_YEARS: 8,   // training window for linear regression
-  MA_WINDOW_WEEKLY: 4,   // moving-average window (weeks)
-  MA_WINDOW_MONTHLY: 3   // moving-average window (months)
+  REGRESSION_YEARS: 8,       // training window for linear regression (yearly)
+  FORECAST_EXTRA_YEARS: 4,   // forecast years beyond current year
+  WEEKLY_FORECAST: 3,        // weeks to forecast
+  MONTHLY_FORECAST: 3,       // months to forecast
+  DAILY60_FORECAST: 5        // days to forecast on 60-day chart
 };
 
 // ── Chart defaults ─────────────────────────────────────────
@@ -106,13 +105,6 @@ function linReg(xs, ys) {
 
 function regPredict(reg, x) { return reg.slope * x + reg.intercept; }
 
-function movAvg(values, w) {
-  return values.map((_, i) => {
-    const sl = values.slice(Math.max(0, i - w + 1), i + 1);
-    return arrMean(sl);
-  });
-}
-
 // ── Date helpers ──────────────────────────────────────────
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
@@ -122,7 +114,6 @@ function parseLocalDate(str) {
 }
 
 function isoWeekLabel(d) {
-  // Returns "YYYY-Www" per ISO 8601
   const nd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   nd.setDate(nd.getDate() + 3 - ((nd.getDay() + 6) % 7));
   const w1 = new Date(nd.getFullYear(), 0, 4);
@@ -138,6 +129,22 @@ function addDays(dateStr, n) {
   return d.toISOString().slice(0, 10);
 }
 
+function addMonths(yyyymm, n) {
+  let [y, m] = yyyymm.split('-').map(Number);
+  m += n;
+  y += Math.floor((m - 1) / 12);
+  m = ((m - 1) % 12) + 1;
+  return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+// ── Fullscreen toggle ─────────────────────────────────────
+function toggleFullscreen(el) {
+  if (!document.fullscreenElement) {
+    if (el.requestFullscreen) el.requestFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+  }
+}
 
 // ── Data processing ───────────────────────────────────────
 function processData(raw) {
@@ -149,19 +156,25 @@ function processData(raw) {
 
   const today       = todayStr();
   const currentYear = new Date().getFullYear();
-  const currentMon  = today.slice(0, 7);         // 'YYYY-MM'
+  const currentMon  = today.slice(0, 7);
 
   const last365Start = addDays(today, -365);
   const prev365Start = addDays(today, -730);
   const last30Start  = addDays(today, -30);
   const prev30Start  = addDays(today, -60);
+  const last7Start   = addDays(today, -7);
+  const prev7Start   = addDays(today, -14);
   const twoYrStart   = addDays(today, -730);
+  const fiveYrStart  = addDays(today, -1825);
+  const last60Start  = addDays(today, -60);
 
   // Partitions
   const last365 = records.filter(r => r.date >= last365Start);
   const prev365 = records.filter(r => r.date >= prev365Start && r.date < last365Start);
   const last30  = records.filter(r => r.date >= last30Start);
   const prev30  = records.filter(r => r.date >= prev30Start && r.date < last30Start);
+  const last7   = records.filter(r => r.date >= last7Start);
+  const prev7   = records.filter(r => r.date >= prev7Start && r.date < last7Start);
   const thisYr  = records.filter(r => r.date.startsWith(String(currentYear)));
   const thisMon = records.filter(r => r.date.startsWith(currentMon));
 
@@ -184,13 +197,39 @@ function processData(raw) {
   const sumPrev30  = arrSum(prev30.map(r => r.count));
   const growth30   = sumPrev30  > 0 ? ((sum30  - sumPrev30)  / sumPrev30)  * 100 : null;
 
+  const sum7       = arrSum(last7.map(r => r.count));
+  const sumPrev7   = arrSum(prev7.map(r => r.count));
+  const growth7    = sumPrev7  > 0 ? ((sum7   - sumPrev7)   / sumPrev7)   * 100 : null;
+
   // Day-of-week averages (last 365 days), Mon=0 … Sun=6
   const dowBuckets = Array.from({ length: 7 }, () => []);
   last365.forEach(r => {
-    const dow = (parseLocalDate(r.date).getDay() + 6) % 7; // shift so Mon=0
+    const dow = (parseLocalDate(r.date).getDay() + 6) % 7;
     dowBuckets[dow].push(r.count);
   });
   const dowAvg = dowBuckets.map(b => arrMean(b));
+
+  // ── Day-of-Month averages (last 2 years) ───────────────
+  const domBuckets = Array.from({ length: 31 }, () => []);
+  records.filter(r => r.date >= twoYrStart).forEach(r => {
+    const day = parseInt(r.date.slice(8, 10), 10) - 1;
+    domBuckets[day].push(r.count);
+  });
+  const domAvg = domBuckets.map(b => b.length ? arrMean(b) : null);
+
+  // ── Month-of-Year averages (last 5 years) ──────────────
+  // Group daily records into monthly totals, then average by month-of-year
+  const moyMonthlyMap = {};
+  records.filter(r => r.date >= fiveYrStart).forEach(r => {
+    const m = r.date.slice(0, 7);
+    moyMonthlyMap[m] = (moyMonthlyMap[m] || 0) + r.count;
+  });
+  const moyBuckets = Array.from({ length: 12 }, () => []);
+  Object.entries(moyMonthlyMap).forEach(([m, v]) => {
+    const mon = parseInt(m.slice(5, 7), 10) - 1;
+    moyBuckets[mon].push(v);
+  });
+  const moyAvg = moyBuckets.map(b => b.length ? arrMean(b) : 0);
 
   // ── Yearly aggregates ──────────────────────────────────
   const yearMap = {};
@@ -198,7 +237,7 @@ function processData(raw) {
     const y = r.date.slice(0, 4);
     yearMap[y] = (yearMap[y] || 0) + r.count;
   });
-  const years  = Object.keys(yearMap).sort();
+  const years   = Object.keys(yearMap).sort();
   const yTotals = years.map(y => yearMap[y]);
 
   // Cumulative
@@ -214,21 +253,22 @@ function processData(raw) {
     return yCumulative[idx];
   });
 
-  const forecastYrs = [currentYear, currentYear + 1, currentYear + 2];
-  const regNonCum   = linReg(trainYrs.map(Number), trainTots);
-  const regCum      = linReg(trainYrs.map(Number), trainCums);
+  const lastForecastYr = currentYear + CONFIG.FORECAST_EXTRA_YEARS;
+  const forecastYrs = Array.from(
+    { length: CONFIG.FORECAST_EXTRA_YEARS + 1 },
+    (_, i) => currentYear + i
+  );
+  const regNonCum = linReg(trainYrs.map(Number), trainTots);
+  const regCum    = linReg(trainYrs.map(Number), trainCums);
 
-  // Full label set including forecast years not yet in data
   const extraYrs = forecastYrs
     .filter(y => !years.includes(String(y)))
     .map(String);
   const allYearLabels = [...years, ...extraYrs];
 
-  // Forecast line data aligned to allYearLabels
-  // Anchor starts at the last training year so the line connects visually
   const lastTrainYr = trainYrs.length ? Number(trainYrs[trainYrs.length - 1]) : null;
 
-  function buildForecastLine(reg, source) {
+  function buildForecastLine(reg) {
     return allYearLabels.map(y => {
       const yn = Number(y);
       if (forecastYrs.includes(yn)) return Math.max(0, regPredict(reg, yn));
@@ -237,14 +277,44 @@ function processData(raw) {
     });
   }
 
-  const forecastLineNonCum = buildForecastLine(regNonCum, 'nonCum');
-  const forecastLineCum    = buildForecastLine(regCum,    'cum');
+  const forecastLineNonCum = buildForecastLine(regNonCum);
+  const forecastLineCum    = buildForecastLine(regCum);
 
-  // Bar data aligned to allYearLabels
   const barNonCum = allYearLabels.map(y => yearMap[y] ?? null);
   const barCum    = allYearLabels.map(y => {
     const idx = years.indexOf(y);
     return idx >= 0 ? yCumulative[idx] : null;
+  });
+
+  // ── Daily 60-day ────────────────────────────────────────
+  const daily60 = records.filter(r => r.date >= last60Start);
+  const daily60Keys = daily60.map(r => r.date);
+  const daily60Vals = daily60.map(r => r.count);
+  const n60 = daily60Keys.length;
+
+  // Fit regression on x = 0..n60-1
+  const d60xs = daily60Vals.map((_, i) => i);
+  const regDaily60 = linReg(d60xs, daily60Vals);
+
+  // Forecast labels: last date + 1..DAILY60_FORECAST days
+  const lastDaily60Date = n60 > 0 ? daily60Keys[n60 - 1] : today;
+  const daily60ForecastDates = Array.from(
+    { length: CONFIG.DAILY60_FORECAST },
+    (_, i) => addDays(lastDaily60Date, i + 1)
+  );
+  const daily60AllLabels = [...daily60Keys, ...daily60ForecastDates];
+
+  // Bar: actual values + nulls for forecast slots
+  const daily60BarData = [
+    ...daily60Vals,
+    ...Array(CONFIG.DAILY60_FORECAST).fill(null)
+  ];
+
+  // Regression line: full fit over actual data + forecast extension
+  // Anchor at last actual point so line connects
+  const daily60RegLine = daily60AllLabels.map((_, i) => {
+    if (i >= n60 - 1) return Math.max(0, regPredict(regDaily60, i));
+    return null;
   });
 
   // ── Weekly (last 2 years) ──────────────────────────────
@@ -255,9 +325,35 @@ function processData(raw) {
       const w = isoWeekLabel(parseLocalDate(r.date));
       weekMap[w] = (weekMap[w] || 0) + r.count;
     });
-  const weekKeys   = Object.keys(weekMap).sort();
-  const weekVals   = weekKeys.map(w => weekMap[w]);
-  const weekMA     = movAvg(weekVals, CONFIG.MA_WINDOW_WEEKLY);
+  const weekKeys = Object.keys(weekMap).sort();
+  const weekVals = weekKeys.map(w => weekMap[w]);
+  const nWeeks   = weekKeys.length;
+
+  // Weekly linear regression
+  const weekXs    = weekVals.map((_, i) => i);
+  const regWeekly = linReg(weekXs, weekVals);
+
+  // Forecast next N weeks from the last date in the last week
+  const lastWeekDate = records
+    .filter(r => r.date >= twoYrStart)
+    .reduce((latest, r) => r.date > latest ? r.date : latest, twoYrStart);
+  const weekForecastKeys = Array.from(
+    { length: CONFIG.WEEKLY_FORECAST },
+    (_, i) => isoWeekLabel(parseLocalDate(addDays(lastWeekDate, 7 * (i + 1))))
+  );
+  const weekAllKeys = [...weekKeys, ...weekForecastKeys];
+
+  // Bar: actual values + nulls for forecast slots
+  const weekBarData = [
+    ...weekVals,
+    ...Array(CONFIG.WEEKLY_FORECAST).fill(null)
+  ];
+
+  // Regression line anchored at last actual week, extending through forecast
+  const weekRegLine = weekAllKeys.map((_, i) => {
+    if (i >= nWeeks - 1) return Math.max(0, regPredict(regWeekly, i));
+    return null;
+  });
 
   // ── Monthly (last 2 years) ─────────────────────────────
   const monMap = {};
@@ -267,9 +363,33 @@ function processData(raw) {
       const m = r.date.slice(0, 7);
       monMap[m] = (monMap[m] || 0) + r.count;
     });
-  const monKeys  = Object.keys(monMap).sort();
-  const monVals  = monKeys.map(m => monMap[m]);
-  const monMA    = movAvg(monVals, CONFIG.MA_WINDOW_MONTHLY);
+  const monKeys = Object.keys(monMap).sort();
+  const monVals = monKeys.map(m => monMap[m]);
+  const nMons   = monKeys.length;
+
+  // Monthly linear regression
+  const monXs     = monVals.map((_, i) => i);
+  const regMonthly = linReg(monXs, monVals);
+
+  // Forecast next N months
+  const lastMonKey = monKeys.length ? monKeys[monKeys.length - 1] : currentMon;
+  const monForecastKeys = Array.from(
+    { length: CONFIG.MONTHLY_FORECAST },
+    (_, i) => addMonths(lastMonKey, i + 1)
+  );
+  const monAllKeys = [...monKeys, ...monForecastKeys];
+
+  // Bar: actual values + nulls for forecast slots
+  const monBarData = [
+    ...monVals,
+    ...Array(CONFIG.MONTHLY_FORECAST).fill(null)
+  ];
+
+  // Regression line anchored at last actual month
+  const monRegLine = monAllKeys.map((_, i) => {
+    if (i >= nMons - 1) return Math.max(0, regPredict(regMonthly, i));
+    return null;
+  });
 
   return {
     // totals
@@ -279,17 +399,29 @@ function processData(raw) {
     // growth
     sum365, sumPrev365, growth365,
     sum30,  sumPrev30,  growth30,
+    sum7,   sumPrev7,   growth7,
     // dow
     dowAvg,
+    // dom / moy
+    domAvg,
+    moyAvg,
     // yearly
     years, yTotals, yCumulative,
     allYearLabels, barNonCum, barCum,
     forecastYrs, forecastLineNonCum, forecastLineCum,
     trainYrs,
+    // daily 60
+    daily60AllLabels, daily60BarData, daily60RegLine,
+    daily60Keys, daily60Vals,
+    n60, daily60ForecastDates,
     // weekly
-    weekKeys, weekVals, weekMA,
+    weekAllKeys, weekBarData, weekRegLine,
+    weekKeys, weekVals, weekForecastKeys,
+    nWeeks,
     // monthly
-    monKeys, monVals, monMA,
+    monAllKeys, monBarData, monRegLine,
+    monKeys, monVals, monForecastKeys,
+    nMons,
     // metadata
     minDate: records[0].date,
     maxDate: records[records.length - 1].date
@@ -313,7 +445,6 @@ function makeChart(canvasId, config) {
   return chartInstances[canvasId];
 }
 
-// Common scale options
 function yScale(title) {
   return {
     grid: { color: 'rgba(44,74,138,.35)' },
@@ -345,22 +476,20 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
 
 /* 1. Total Reporting Counts */
 function renderTotalCounts(d) {
-  document.getElementById('metric-total-all').textContent   = fmtCompact(d.totalAll);
+  document.getElementById('metric-total-all').textContent      = fmtCompact(d.totalAll);
   document.getElementById('metric-total-all-full').textContent = fmt(d.totalAll);
-
-  document.getElementById('metric-total-yr').textContent    = fmtCompact(d.totalThisYear);
-  document.getElementById('metric-total-yr-full').textContent = fmt(d.totalThisYear);
-
-  document.getElementById('metric-total-mon').textContent   = fmtCompact(d.totalThisMon);
+  document.getElementById('metric-total-yr').textContent       = fmtCompact(d.totalThisYear);
+  document.getElementById('metric-total-yr-full').textContent  = fmt(d.totalThisYear);
+  document.getElementById('metric-total-mon').textContent      = fmtCompact(d.totalThisMon);
   document.getElementById('metric-total-mon-full').textContent = fmt(d.totalThisMon);
 }
 
 /* 2. Daily Reporting Stats */
 function renderDailyStats(d) {
   const rows = [
-    { id: 'row-all',    s: d.dailyAll  },
-    { id: 'row-365',    s: d.daily365  },
-    { id: 'row-30',     s: d.daily30   }
+    { id: 'row-all', s: d.dailyAll },
+    { id: 'row-365', s: d.daily365 },
+    { id: 'row-30',  s: d.daily30  }
   ];
   rows.forEach(({ id, s }) => {
     document.getElementById(`${id}-avg`).textContent = fmtCompact(s.avg);
@@ -380,8 +509,9 @@ function renderGrowth(d) {
     document.getElementById(`${prefix}-recent`).textContent   = fmtCompact(recent);
     document.getElementById(`${prefix}-previous`).textContent = fmtCompact(previous);
   }
-  setGrowth('g12', d.growth365, d.sum365, d.sumPrev365);
+  setGrowth('g7d', d.growth7,   d.sum7,   d.sumPrev7);
   setGrowth('g1m', d.growth30,  d.sum30,  d.sumPrev30);
+  setGrowth('g12', d.growth365, d.sum365, d.sumPrev365);
 }
 
 /* 4. Day-of-Week Bar Chart */
@@ -413,7 +543,62 @@ function renderDowChart(d) {
   });
 }
 
-/* 5. Cumulative Yearly Chart */
+/* 5. Day-of-Month Bar Chart (last 2 years) */
+function renderDomChart(d) {
+  const labels = Array.from({ length: 31 }, (_, i) => String(i + 1));
+  makeChart('chart-dom', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Avg Daily Count',
+        data: d.domAvg,
+        backgroundColor: COLORS.blueA.replace('.25', '.65'),
+        borderColor: COLORS.blue,
+        borderWidth: 1.5,
+        borderRadius: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtCompact(ctx.parsed.y) } }
+      },
+      scales: { x: xScale(31), y: yScale('Avg Daily Count') }
+    }
+  });
+}
+
+/* 6. Month-of-Year Bar Chart (last 5 years) */
+function renderMoyChart(d) {
+  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  makeChart('chart-moy', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Avg Monthly Count',
+        data: d.moyAvg,
+        backgroundColor: COLORS.tealA.replace('.25', '.65'),
+        borderColor: COLORS.teal,
+        borderWidth: 1.5,
+        borderRadius: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + fmtCompact(ctx.parsed.y) } }
+      },
+      scales: { x: xScale(12), y: yScale('Avg Monthly Count') }
+    }
+  });
+}
+
+/* 7. Cumulative Yearly Chart */
 function renderCumulativeChart(d) {
   makeChart('chart-cum-yearly', {
     type: 'bar',
@@ -456,7 +641,25 @@ function renderCumulativeChart(d) {
   });
 }
 
-/* 6. Non-cumulative Yearly Chart */
+/* 8. Cumulative Yearly Table */
+function renderCumTable(d) {
+  const tbody = document.getElementById('tbody-cum');
+  tbody.innerHTML = '';
+  d.allYearLabels.forEach((y, i) => {
+    const isForecast = d.forecastYrs.includes(Number(y)) && d.barCum[i] == null;
+    const actual   = d.barCum[i];
+    const forecast = d.forecastLineCum[i];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${y}${isForecast ? '<span class="tag-forecast">FORECAST</span>' : ''}</td>
+      <td>${actual   != null ? fmt(actual)              : '—'}</td>
+      <td>${forecast != null ? fmt(Math.round(forecast)) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* 9. Annual (non-cumulative) Yearly Chart */
 function renderNonCumChart(d) {
   makeChart('chart-noncum-yearly', {
     type: 'bar',
@@ -499,26 +702,7 @@ function renderNonCumChart(d) {
   });
 }
 
-
-/* 7. Cumulative Yearly Table */
-function renderCumTable(d) {
-  const tbody = document.getElementById('tbody-cum');
-  tbody.innerHTML = '';
-  d.allYearLabels.forEach((y, i) => {
-    const isForecast = d.forecastYrs.includes(Number(y)) && d.barCum[i] == null;
-    const actual = d.barCum[i];
-    const forecast = d.forecastLineCum[i];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${y}${isForecast ? '<span class="tag-forecast">FORECAST</span>' : ''}</td>
-      <td>${actual   != null ? fmt(actual)   : '—'}</td>
-      <td>${forecast != null ? fmt(Math.round(forecast)) : '—'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-/* 8. Non-cumulative Yearly Table */
+/* 10. Annual (non-cumulative) Yearly Table */
 function renderNonCumTable(d) {
   const tbody = document.getElementById('tbody-noncum');
   tbody.innerHTML = '';
@@ -529,24 +713,25 @@ function renderNonCumTable(d) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${y}${isForecast ? '<span class="tag-forecast">FORECAST</span>' : ''}</td>
-      <td>${actual   != null ? fmt(actual)   : '—'}</td>
+      <td>${actual   != null ? fmt(actual)              : '—'}</td>
       <td>${forecast != null ? fmt(Math.round(forecast)) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/* 9. Weekly Chart (last 2 years) */
-function renderWeeklyChart(d) {
-  makeChart('chart-weekly', {
+/* 11. Daily 60-day Chart */
+function renderDaily60Chart(d) {
+  const nForecast = CONFIG.DAILY60_FORECAST;
+  makeChart('chart-daily60', {
     type: 'bar',
     data: {
-      labels: d.weekKeys,
+      labels: d.daily60AllLabels,
       datasets: [
         {
           type: 'bar',
-          label: 'Weekly Count',
-          data: d.weekVals,
+          label: 'Daily Count',
+          data: d.daily60BarData,
           backgroundColor: COLORS.blueA,
           borderColor: COLORS.blue,
           borderWidth: 1,
@@ -555,13 +740,92 @@ function renderWeeklyChart(d) {
         },
         {
           type: 'line',
-          label: `${CONFIG.MA_WINDOW_WEEKLY}-Week Moving Avg`,
-          data: d.weekMA,
+          label: 'Forecast (linear regression)',
+          data: d.daily60RegLine,
           borderColor: COLORS.amber,
           backgroundColor: 'transparent',
           borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.3,
+          borderDash: [5, 4],
+          pointRadius: ctx => ctx.dataIndex >= d.n60 ? 5 : 0,
+          pointBackgroundColor: COLORS.amber,
+          spanGaps: false,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
+      },
+      scales: { x: xScale(), y: yScale('Daily Count') }
+    }
+  });
+}
+
+/* 12. Daily 60-day Table */
+function renderDaily60Table(d) {
+  const tbody = document.getElementById('tbody-daily60');
+  tbody.innerHTML = '';
+  // Show most recent first: actual data reversed + forecast dates at top
+  const forecastSet = new Set(d.daily60ForecastDates);
+
+  // Forecast rows first (in date order)
+  d.daily60ForecastDates.forEach((date, i) => {
+    const regIdx = d.n60 + i;
+    const regVal = d.daily60RegLine[regIdx];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${date}<span class="tag-forecast">FORECAST</span></td>
+      <td>—</td>
+      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Actual rows in reverse (most recent first)
+  [...d.daily60Keys].reverse().forEach((date, revI) => {
+    const i = d.n60 - 1 - revI;
+    const regVal = i >= d.n60 - 1 ? d.daily60RegLine[i] : null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${date}</td>
+      <td>${fmt(d.daily60Vals[i])}</td>
+      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* 13. Weekly Chart (last 2 years) */
+function renderWeeklyChart(d) {
+  makeChart('chart-weekly', {
+    type: 'bar',
+    data: {
+      labels: d.weekAllKeys,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Weekly Count',
+          data: d.weekBarData,
+          backgroundColor: COLORS.blueA,
+          borderColor: COLORS.blue,
+          borderWidth: 1,
+          borderRadius: 2,
+          order: 2
+        },
+        {
+          type: 'line',
+          label: `Forecast (linear regression)`,
+          data: d.weekRegLine,
+          borderColor: COLORS.amber,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 4],
+          pointRadius: ctx => ctx.dataIndex >= d.nWeeks ? 5 : 0,
+          pointBackgroundColor: COLORS.amber,
+          spanGaps: false,
           order: 1
         }
       ]
@@ -577,34 +841,49 @@ function renderWeeklyChart(d) {
   });
 }
 
-/* 10. Weekly Table */
+/* 14. Weekly Table */
 function renderWeeklyTable(d) {
   const tbody = document.getElementById('tbody-weekly');
   tbody.innerHTML = '';
-  // Show all weeks (reverse order: most recent first)
-  [...d.weekKeys].reverse().forEach((w, i) => {
-    const ri = d.weekKeys.length - 1 - i;
+
+  // Forecast rows first
+  d.weekForecastKeys.forEach((w, i) => {
+    const regIdx = d.nWeeks + i;
+    const regVal = d.weekRegLine[regIdx];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${w}<span class="tag-forecast">FORECAST</span></td>
+      <td>—</td>
+      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Actual rows reversed (most recent first)
+  [...d.weekKeys].reverse().forEach((w, revI) => {
+    const i = d.nWeeks - 1 - revI;
+    const regVal = i === d.nWeeks - 1 ? d.weekRegLine[i] : null;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${w}</td>
-      <td>${fmt(d.weekVals[ri])}</td>
-      <td>${fmt(Math.round(d.weekMA[ri]))}</td>
+      <td>${fmt(d.weekVals[i])}</td>
+      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/* 11. Monthly Chart (last 2 years) */
+/* 15. Monthly Chart (last 2 years) */
 function renderMonthlyChart(d) {
   makeChart('chart-monthly', {
     type: 'bar',
     data: {
-      labels: d.monKeys,
+      labels: d.monAllKeys,
       datasets: [
         {
           type: 'bar',
           label: 'Monthly Count',
-          data: d.monVals,
+          data: d.monBarData,
           backgroundColor: COLORS.tealA,
           borderColor: COLORS.teal,
           borderWidth: 1,
@@ -613,13 +892,15 @@ function renderMonthlyChart(d) {
         },
         {
           type: 'line',
-          label: `${CONFIG.MA_WINDOW_MONTHLY}-Month Moving Avg`,
-          data: d.monMA,
+          label: `Forecast (linear regression)`,
+          data: d.monRegLine,
           borderColor: COLORS.amber,
           backgroundColor: 'transparent',
           borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.3,
+          borderDash: [5, 4],
+          pointRadius: ctx => ctx.dataIndex >= d.nMons ? 5 : 0,
+          pointBackgroundColor: COLORS.amber,
+          spanGaps: false,
           order: 1
         }
       ]
@@ -635,23 +916,39 @@ function renderMonthlyChart(d) {
   });
 }
 
-/* 12. Monthly Table */
+/* 16. Monthly Table */
 function renderMonthlyTable(d) {
   const tbody = document.getElementById('tbody-monthly');
   tbody.innerHTML = '';
-  [...d.monKeys].reverse().forEach((m, i) => {
-    const ri = d.monKeys.length - 1 - i;
+
+  // Forecast rows first
+  d.monForecastKeys.forEach((m, i) => {
+    const regIdx = d.nMons + i;
+    const regVal = d.monRegLine[regIdx];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${m}<span class="tag-forecast">FORECAST</span></td>
+      <td>—</td>
+      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Actual rows reversed (most recent first)
+  [...d.monKeys].reverse().forEach((m, revI) => {
+    const i = d.nMons - 1 - revI;
+    const regVal = i === d.nMons - 1 ? d.monRegLine[i] : null;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${m}</td>
-      <td>${fmt(d.monVals[ri])}</td>
-      <td>${fmt(Math.round(d.monMA[ri]))}</td>
+      <td>${fmt(d.monVals[i])}</td>
+      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/* 13. Pie Chart – total reporting per year */
+/* 17. Pie Chart – total reporting per year */
 function renderPieChart(d) {
   const colors = pieColors(d.years.length);
   makeChart('chart-pie', {
@@ -695,6 +992,24 @@ function renderPieChart(d) {
   });
 }
 
+/* 18. Pie Table – total reporting per year */
+function renderPieTable(d) {
+  const tbody = document.getElementById('tbody-pie');
+  tbody.innerHTML = '';
+  // Show most recent year first
+  [...d.years].reverse().forEach(y => {
+    const i = d.years.indexOf(y);
+    const pct = ((d.yTotals[i] / d.totalAll) * 100).toFixed(1);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${y}</td>
+      <td>${fmt(d.yTotals[i])}</td>
+      <td>${pct}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 // ── Header metadata ───────────────────────────────────────
 function renderMeta(d) {
   const now = new Date();
@@ -722,15 +1037,20 @@ async function init() {
     renderDailyStats(data);
     renderGrowth(data);
     renderDowChart(data);
+    renderDomChart(data);
+    renderMoyChart(data);
     renderCumulativeChart(data);
-    renderNonCumChart(data);
     renderCumTable(data);
+    renderNonCumChart(data);
     renderNonCumTable(data);
+    renderDaily60Chart(data);
+    renderDaily60Table(data);
     renderWeeklyChart(data);
     renderWeeklyTable(data);
     renderMonthlyChart(data);
     renderMonthlyTable(data);
     renderPieChart(data);
+    renderPieTable(data);
 
     document.getElementById('loading-overlay').style.display = 'none';
   } catch (err) {
