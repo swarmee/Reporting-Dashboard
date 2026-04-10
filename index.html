@@ -51,6 +51,7 @@
     <div class="panel-header">
       <span class="panel-icon">📊</span>
       <h2 class="panel-title">Total Reporting Counts</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="metrics-grid">
@@ -82,6 +83,7 @@
     <div class="panel-header">
       <span class="panel-icon">📈</span>
       <h2 class="panel-title">Daily Reporting Stats</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="stats-table-container">
@@ -130,16 +132,17 @@
     <div class="panel-header">
       <span class="panel-icon">🚀</span>
       <h2 class="panel-title">Reporting Growth Metrics</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="growth-grid">
 
         <div class="growth-card">
-          <span class="growth-label">Last 12 Months vs Previous 12 Months</span>
-          <span class="growth-value neutral" id="g12-pct">—</span>
+          <span class="growth-label">Last 7 Days vs Previous 7 Days</span>
+          <span class="growth-value neutral" id="g7d-pct">—</span>
           <div class="growth-detail">
-            Recent:&nbsp;&nbsp;<strong id="g12-recent">—</strong><br />
-            Previous: <strong id="g12-previous">—</strong>
+            Recent:&nbsp;&nbsp;<strong id="g7d-recent">—</strong><br />
+            Previous: <strong id="g7d-previous">—</strong>
           </div>
         </div>
 
@@ -152,6 +155,15 @@
           </div>
         </div>
 
+        <div class="growth-card">
+          <span class="growth-label">Last 12 Months vs Previous 12 Months</span>
+          <span class="growth-value neutral" id="g12-pct">—</span>
+          <div class="growth-detail">
+            Recent:&nbsp;&nbsp;<strong id="g12-recent">—</strong><br />
+            Previous: <strong id="g12-previous">—</strong>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
@@ -161,6 +173,7 @@
     <div class="panel-header">
       <span class="panel-icon">📅</span>
       <h2 class="panel-title">Day of Week Avg Count — Last 365 Days</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
@@ -169,13 +182,44 @@
     </div>
   </section>
 
-  <!-- Row 3: Cumulative Yearly Chart | Non-cumulative Yearly Chart -->
+  <!-- Row 3: Day-of-Month Chart | Month-of-Year Chart -->
 
-  <!-- Panel 5 – Cumulative Yearly Reporting Chart -->
+  <!-- Panel 5 – Day of Month Average Count (last 2 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗓️</span>
+      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-dom"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 6 – Month of Year Average Count (last 5 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📆</span>
+      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-moy"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 4: Cumulative Yearly Chart | Cumulative Yearly Table -->
+
+  <!-- Panel 7 – Cumulative Yearly Reporting Chart -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📉</span>
       <h2 class="panel-title">Cumulative Yearly Reporting</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
@@ -184,26 +228,12 @@
     </div>
   </section>
 
-  <!-- Panel 6 – Non-cumulative Yearly Reporting Chart -->
-  <section class="panel">
-    <div class="panel-header">
-      <span class="panel-icon">📊</span>
-      <h2 class="panel-title">Annual Reporting Volume</h2>
-    </div>
-    <div class="panel-body">
-      <div class="chart-container">
-        <canvas id="chart-noncum-yearly"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <!-- Row 4: Cumulative Table | Non-cumulative Table -->
-
-  <!-- Panel 7 – Cumulative Yearly Table -->
+  <!-- Panel 8 – Cumulative Yearly Table -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
       <h2 class="panel-title">Cumulative Yearly Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
       <div class="data-table-wrapper">
@@ -221,11 +251,28 @@
     </div>
   </section>
 
-  <!-- Panel 8 – Non-cumulative Yearly Table -->
+  <!-- Row 5: Annual Reporting Chart | Annual Reporting Table -->
+
+  <!-- Panel 9 – Annual Reporting Volume Chart -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📊</span>
+      <h2 class="panel-title">Annual Reporting Volume</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-noncum-yearly"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 10 – Annual Reporting Table -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
       <h2 class="panel-title">Annual Reporting Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
       <div class="data-table-wrapper">
@@ -243,13 +290,53 @@
     </div>
   </section>
 
-  <!-- Row 5: Weekly Chart | Weekly Table -->
+  <!-- Row 6: Daily 60-day Chart | Daily 60-day Table -->
 
-  <!-- Panel 9 – Weekly Reporting Chart (last 2 years) -->
+  <!-- Panel 11 – Daily Reporting Chart (last 60 days) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📋</span>
+      <h2 class="panel-title">Daily Reporting — Last 60 Days</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-daily60"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 12 – Daily Reporting Table (last 60 days) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Daily Reporting Table — Last 60 Days</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Daily Count</th>
+              <th>Linear Regression</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-daily60"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 7: Weekly Chart | Weekly Table -->
+
+  <!-- Panel 13 – Weekly Reporting Chart (last 2 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📆</span>
       <h2 class="panel-title">Weekly Reporting — Last 2 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
@@ -258,11 +345,12 @@
     </div>
   </section>
 
-  <!-- Panel 10 – Weekly Table -->
+  <!-- Panel 14 – Weekly Table -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
       <h2 class="panel-title">Weekly Reporting Table — Last 2 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
       <div class="data-table-wrapper">
@@ -271,7 +359,7 @@
             <tr>
               <th>ISO Week</th>
               <th>Weekly Count</th>
-              <th>4-Week Moving Avg</th>
+              <th>Linear Regression</th>
             </tr>
           </thead>
           <tbody id="tbody-weekly"></tbody>
@@ -280,13 +368,14 @@
     </div>
   </section>
 
-  <!-- Row 6: Monthly Chart | Monthly Table -->
+  <!-- Row 8: Monthly Chart | Monthly Table -->
 
-  <!-- Panel 11 – Monthly Reporting Chart (last 2 years) -->
+  <!-- Panel 15 – Monthly Reporting Chart (last 2 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗓️</span>
       <h2 class="panel-title">Monthly Reporting — Last 2 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
@@ -295,11 +384,12 @@
     </div>
   </section>
 
-  <!-- Panel 12 – Monthly Table -->
+  <!-- Panel 16 – Monthly Table -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
       <h2 class="panel-title">Monthly Reporting Table — Last 2 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
       <div class="data-table-wrapper">
@@ -308,7 +398,7 @@
             <tr>
               <th>Month</th>
               <th>Monthly Count</th>
-              <th>3-Month Moving Avg</th>
+              <th>Linear Regression</th>
             </tr>
           </thead>
           <tbody id="tbody-monthly"></tbody>
@@ -317,13 +407,14 @@
     </div>
   </section>
 
-  <!-- Row 7: Pie Chart (full width) -->
+  <!-- Row 9: Pie Chart | Pie Table -->
 
-  <!-- Panel 13 – Pie Chart: Total reporting per year -->
-  <section class="panel panel-full">
+  <!-- Panel 17 – Pie Chart: Total reporting per year -->
+  <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🥧</span>
       <h2 class="panel-title">Total Reporting Share per Year</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="pie-chart-container">
@@ -331,6 +422,29 @@
           <canvas id="chart-pie"></canvas>
         </div>
         <div class="pie-legend" id="pie-legend"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 18 – Pie Table: Total reporting per year -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Total Reporting Share per Year — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Total Count</th>
+              <th>Share %</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pie"></tbody>
+        </table>
       </div>
     </div>
   </section>
