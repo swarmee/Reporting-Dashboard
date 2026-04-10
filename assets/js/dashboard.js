@@ -132,9 +132,18 @@ function addDays(dateStr, n) {
 function addMonths(yyyymm, n) {
   let [y, m] = yyyymm.split('-').map(Number);
   m += n;
-  while (m > 12) { m -= 12; y++; }
-  while (m < 1)  { m += 12; y--; }
+  y += Math.floor((m - 1) / 12);
+  m = ((m - 1) % 12) + 1;
   return `${y}-${String(m).padStart(2, '0')}`;
+}
+
+// ── Fullscreen toggle ─────────────────────────────────────
+function toggleFullscreen(el) {
+  if (!document.fullscreenElement) {
+    if (el.requestFullscreen) el.requestFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+  }
 }
 
 // ── Data processing ───────────────────────────────────────
@@ -461,15 +470,6 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
       autoSkip: true
     }
   };
-}
-
-// ── Fullscreen toggle ─────────────────────────────────────
-function toggleFullscreen(el) {
-  if (!document.fullscreenElement) {
-    if (el.requestFullscreen) el.requestFullscreen();
-  } else {
-    if (document.exitFullscreen) document.exitFullscreen();
-  }
 }
 
 // ── Panel renderers ───────────────────────────────────────
