@@ -32,6 +32,27 @@
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
 }
 
+/* ── Light Theme Override ────────────────────────────────── */
+[data-theme="light"] {
+  --bg-body:       #f0f4fa;
+  --bg-card:       #ffffff;
+  --bg-card-alt:   #eef2fa;
+  --bg-header:     #dce6f5;
+  --border:        #c5d5ed;
+  --border-light:  #a5bbdd;
+  --text-primary:  #1a2a4a;
+  --text-secondary:#2c4a7a;
+  --text-muted:    #5a7aaa;
+  --shadow:        0 4px 20px rgba(0,0,0,.15);
+  --shadow-sm:     0 2px 8px  rgba(0,0,0,.10);
+}
+[data-theme="light"] .brand-title {
+  background: linear-gradient(135deg, #2060d0 0%, #0a9a9a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* ── Reset ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -185,6 +206,25 @@ body {
 .panel-expand-btn:hover {
   color: var(--accent-blue);
   border-color: var(--border-light);
+}
+
+/* ── Theme Toggle ────────────────────────────────────────── */
+.theme-toggle-btn {
+  background: none;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: color .15s, border-color .15s, background .15s;
+  white-space: nowrap;
+}
+.theme-toggle-btn:hover {
+  color: var(--accent-blue);
+  background: var(--bg-card-alt);
+  border-color: var(--accent-blue);
 }
 
 /* Fullscreen panel styling */

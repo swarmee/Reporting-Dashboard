@@ -146,6 +146,19 @@ function toggleFullscreen(el) {
   }
 }
 
+function onFullscreenChange() {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    // Exiting fullscreen — resize all charts so they return to original height
+    setTimeout(() => {
+      Object.values(chartInstances).forEach(chart => {
+        try { chart.resize(); } catch (e) { /* ignore */ }
+      });
+    }, 150);
+  }
+}
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
 // ── Data processing ───────────────────────────────────────
 function processData(raw) {
   const records = raw.content
@@ -317,6 +330,12 @@ function processData(raw) {
     return null;
   });
 
+  // 7-day moving average for daily60
+  const daily60MA = daily60Vals.map((_, i) => {
+    const start = Math.max(0, i - 6);
+    return arrMean(daily60Vals.slice(start, i + 1));
+  });
+
   // ── Weekly (last 2 years) ──────────────────────────────
   const weekMap = {};
   records
@@ -332,6 +351,9 @@ function processData(raw) {
   // Weekly linear regression
   const weekXs    = weekVals.map((_, i) => i);
   const regWeekly = linReg(weekXs, weekVals);
+
+  // Full line of best fit for weekly (all actual weeks, no forecast)
+  const weekBestFit = weekXs.map(x => Math.max(0, regPredict(regWeekly, x)));
 
   // Forecast next N weeks from the last date in the last week
   const lastWeekDate = records
@@ -371,6 +393,9 @@ function processData(raw) {
   const monXs     = monVals.map((_, i) => i);
   const regMonthly = linReg(monXs, monVals);
 
+  // Full line of best fit for monthly (all actual months, no forecast)
+  const monBestFit = monXs.map(x => Math.max(0, regPredict(regMonthly, x)));
+
   // Forecast next N months
   const lastMonKey = monKeys.length ? monKeys[monKeys.length - 1] : currentMon;
   const monForecastKeys = Array.from(
@@ -390,6 +415,44 @@ function processData(raw) {
     if (i >= nMons - 1) return Math.max(0, regPredict(regMonthly, i));
     return null;
   });
+
+  // ── Last 5 Year Summary ─────────────────────────────────────────
+  const fiveYrSummary = [];
+  for (let offset = 0; offset < 5; offset++) {
+    const y = String(currentYear - offset);
+    const yIdx = years.indexOf(y);
+    const annTotal = yIdx >= 0 ? yTotals[yIdx] : 0;
+    const prevY = String(currentYear - offset - 1);
+    const prevYIdx = years.indexOf(prevY);
+    const prevAnn = prevYIdx >= 0 ? yTotals[prevYIdx] : null;
+    const annGrowth = (prevAnn != null && prevAnn > 0)
+      ? ((annTotal - prevAnn) / prevAnn) * 100 : null;
+    const cumTotal = yIdx >= 0 ? yCumulative[yIdx] : null;
+    const prevCum = prevYIdx >= 0 ? yCumulative[prevYIdx] : null;
+    const cumGrowth = (prevCum != null && prevCum > 0 && cumTotal != null)
+      ? ((cumTotal - prevCum) / prevCum) * 100 : null;
+    fiveYrSummary.push({ year: y, annTotal, annGrowth, cumTotal, cumGrowth });
+  }
+  // "Earlier Years" row (all years before currentYear-4)
+  const cutoffYear = currentYear - 4;
+  const earlierYrs = years.filter(y => Number(y) < cutoffYear);
+  const earlierAnnTotal = arrSum(earlierYrs.map(y => yearMap[y] || 0));
+  const lastEarlierIdx = earlierYrs.length > 0 ? years.indexOf(earlierYrs[earlierYrs.length - 1]) : -1;
+  const earlierCumTotal = lastEarlierIdx >= 0 ? yCumulative[lastEarlierIdx] : 0;
+  fiveYrSummary.push({ year: 'Earlier', annTotal: earlierAnnTotal, annGrowth: null, cumTotal: earlierCumTotal, cumGrowth: null });
+
+  // ── Pie chart: top 10 years by total + "Other" ──────────────────
+  const pieSorted = years.map((y, i) => ({ year: y, total: yTotals[i] }))
+    .sort((a, b) => b.total - a.total);
+  const pieTop10  = pieSorted.slice(0, 10);
+  const pieOthers = pieSorted.slice(10);
+  const pieOtherTotal = arrSum(pieOthers.map(x => x.total));
+  const pieDisplayYears  = pieTop10.map(x => x.year);
+  const pieDisplayTotals = pieTop10.map(x => x.total);
+  if (pieOthers.length > 0) {
+    pieDisplayYears.push('Other');
+    pieDisplayTotals.push(pieOtherTotal);
+  }
 
   return {
     // totals
@@ -411,17 +474,21 @@ function processData(raw) {
     forecastYrs, forecastLineNonCum, forecastLineCum,
     trainYrs,
     // daily 60
-    daily60AllLabels, daily60BarData, daily60RegLine,
+    daily60AllLabels, daily60BarData, daily60RegLine, daily60MA,
     daily60Keys, daily60Vals,
     n60, daily60ForecastDates,
     // weekly
-    weekAllKeys, weekBarData, weekRegLine,
+    weekAllKeys, weekBarData, weekRegLine, weekBestFit,
     weekKeys, weekVals, weekForecastKeys,
     nWeeks,
     // monthly
-    monAllKeys, monBarData, monRegLine,
+    monAllKeys, monBarData, monRegLine, monBestFit,
     monKeys, monVals, monForecastKeys,
     nMons,
+    // 5-year summary
+    fiveYrSummary,
+    // pie
+    pieDisplayYears, pieDisplayTotals,
     // metadata
     minDate: records[0].date,
     maxDate: records[records.length - 1].date
@@ -446,27 +513,29 @@ function makeChart(canvasId, config) {
 }
 
 function yScale(title) {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   return {
-    grid: { color: 'rgba(44,74,138,.35)' },
+    grid: { color: isLight ? 'rgba(150,180,220,.4)' : 'rgba(44,74,138,.35)' },
     ticks: {
       callback: v => fmtCompact(v),
       maxTicksLimit: 6,
-      color: '#9ab3d8'
+      color: isLight ? '#3a5a8a' : '#9ab3d8'
     },
     title: title
-      ? { display: true, text: title, color: '#5a7aaa', font: { size: 10 } }
+      ? { display: true, text: title, color: isLight ? '#3a5a8a' : '#5a7aaa', font: { size: 10 } }
       : undefined
   };
 }
 
 function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   return {
     grid: { display: false },
     ticks: {
       maxTicksLimit: maxLabels,
       maxRotation: 40,
       minRotation: 0,
-      color: '#9ab3d8',
+      color: isLight ? '#3a5a8a' : '#9ab3d8',
       autoSkip: true
     }
   };
@@ -645,7 +714,8 @@ function renderCumulativeChart(d) {
 function renderCumTable(d) {
   const tbody = document.getElementById('tbody-cum');
   tbody.innerHTML = '';
-  d.allYearLabels.forEach((y, i) => {
+  [...d.allYearLabels].reverse().forEach((y, revI) => {
+    const i = d.allYearLabels.length - 1 - revI;
     const isForecast = d.forecastYrs.includes(Number(y)) && d.barCum[i] == null;
     const actual   = d.barCum[i];
     const forecast = d.forecastLineCum[i];
@@ -706,7 +776,8 @@ function renderNonCumChart(d) {
 function renderNonCumTable(d) {
   const tbody = document.getElementById('tbody-noncum');
   tbody.innerHTML = '';
-  d.allYearLabels.forEach((y, i) => {
+  [...d.allYearLabels].reverse().forEach((y, revI) => {
+    const i = d.allYearLabels.length - 1 - revI;
     const isForecast = d.forecastYrs.includes(Number(y)) && d.barNonCum[i] == null;
     const actual   = d.barNonCum[i];
     const forecast = d.forecastLineNonCum[i];
@@ -722,16 +793,15 @@ function renderNonCumTable(d) {
 
 /* 11. Daily 60-day Chart */
 function renderDaily60Chart(d) {
-  const nForecast = CONFIG.DAILY60_FORECAST;
   makeChart('chart-daily60', {
     type: 'bar',
     data: {
-      labels: d.daily60AllLabels,
+      labels: d.daily60Keys,
       datasets: [
         {
           type: 'bar',
           label: 'Daily Count',
-          data: d.daily60BarData,
+          data: d.daily60Vals,
           backgroundColor: COLORS.blueA,
           borderColor: COLORS.blue,
           borderWidth: 1,
@@ -740,14 +810,13 @@ function renderDaily60Chart(d) {
         },
         {
           type: 'line',
-          label: 'Forecast (linear regression)',
-          data: d.daily60RegLine,
-          borderColor: COLORS.amber,
+          label: '7-Day Moving Avg',
+          data: d.daily60MA,
+          borderColor: COLORS.green,
           backgroundColor: 'transparent',
           borderWidth: 2,
-          borderDash: [5, 4],
-          pointRadius: ctx => ctx.dataIndex >= d.n60 ? 5 : 0,
-          pointBackgroundColor: COLORS.amber,
+          pointRadius: 0,
+          tension: 0.3,
           spanGaps: false,
           order: 1
         }
@@ -768,31 +837,13 @@ function renderDaily60Chart(d) {
 function renderDaily60Table(d) {
   const tbody = document.getElementById('tbody-daily60');
   tbody.innerHTML = '';
-  // Show most recent first: actual data reversed + forecast dates at top
-  const forecastSet = new Set(d.daily60ForecastDates);
-
-  // Forecast rows first (in date order)
-  d.daily60ForecastDates.forEach((date, i) => {
-    const regIdx = d.n60 + i;
-    const regVal = d.daily60RegLine[regIdx];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${date}<span class="tag-forecast">FORECAST</span></td>
-      <td>—</td>
-      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  // Actual rows in reverse (most recent first)
   [...d.daily60Keys].reverse().forEach((date, revI) => {
     const i = d.n60 - 1 - revI;
-    const regVal = i >= d.n60 - 1 ? d.daily60RegLine[i] : null;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${date}</td>
       <td>${fmt(d.daily60Vals[i])}</td>
-      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
+      <td>${fmt(Math.round(d.daily60MA[i]))}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -803,12 +854,12 @@ function renderWeeklyChart(d) {
   makeChart('chart-weekly', {
     type: 'bar',
     data: {
-      labels: d.weekAllKeys,
+      labels: d.weekKeys,
       datasets: [
         {
           type: 'bar',
           label: 'Weekly Count',
-          data: d.weekBarData,
+          data: d.weekVals,
           backgroundColor: COLORS.blueA,
           borderColor: COLORS.blue,
           borderWidth: 1,
@@ -817,14 +868,13 @@ function renderWeeklyChart(d) {
         },
         {
           type: 'line',
-          label: `Forecast (linear regression)`,
-          data: d.weekRegLine,
+          label: 'Line of Best Fit',
+          data: d.weekBestFit,
           borderColor: COLORS.amber,
           backgroundColor: 'transparent',
           borderWidth: 2,
           borderDash: [5, 4],
-          pointRadius: ctx => ctx.dataIndex >= d.nWeeks ? 5 : 0,
-          pointBackgroundColor: COLORS.amber,
+          pointRadius: 0,
           spanGaps: false,
           order: 1
         }
@@ -846,28 +896,13 @@ function renderWeeklyTable(d) {
   const tbody = document.getElementById('tbody-weekly');
   tbody.innerHTML = '';
 
-  // Forecast rows first
-  d.weekForecastKeys.forEach((w, i) => {
-    const regIdx = d.nWeeks + i;
-    const regVal = d.weekRegLine[regIdx];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${w}<span class="tag-forecast">FORECAST</span></td>
-      <td>—</td>
-      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  // Actual rows reversed (most recent first)
   [...d.weekKeys].reverse().forEach((w, revI) => {
     const i = d.nWeeks - 1 - revI;
-    const regVal = i === d.nWeeks - 1 ? d.weekRegLine[i] : null;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${w}</td>
       <td>${fmt(d.weekVals[i])}</td>
-      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
+      <td>${fmt(Math.round(d.weekBestFit[i]))}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -878,12 +913,12 @@ function renderMonthlyChart(d) {
   makeChart('chart-monthly', {
     type: 'bar',
     data: {
-      labels: d.monAllKeys,
+      labels: d.monKeys,
       datasets: [
         {
           type: 'bar',
           label: 'Monthly Count',
-          data: d.monBarData,
+          data: d.monVals,
           backgroundColor: COLORS.tealA,
           borderColor: COLORS.teal,
           borderWidth: 1,
@@ -892,14 +927,13 @@ function renderMonthlyChart(d) {
         },
         {
           type: 'line',
-          label: `Forecast (linear regression)`,
-          data: d.monRegLine,
+          label: 'Line of Best Fit',
+          data: d.monBestFit,
           borderColor: COLORS.amber,
           backgroundColor: 'transparent',
           borderWidth: 2,
           borderDash: [5, 4],
-          pointRadius: ctx => ctx.dataIndex >= d.nMons ? 5 : 0,
-          pointBackgroundColor: COLORS.amber,
+          pointRadius: 0,
           spanGaps: false,
           order: 1
         }
@@ -921,28 +955,13 @@ function renderMonthlyTable(d) {
   const tbody = document.getElementById('tbody-monthly');
   tbody.innerHTML = '';
 
-  // Forecast rows first
-  d.monForecastKeys.forEach((m, i) => {
-    const regIdx = d.nMons + i;
-    const regVal = d.monRegLine[regIdx];
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${m}<span class="tag-forecast">FORECAST</span></td>
-      <td>—</td>
-      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  // Actual rows reversed (most recent first)
   [...d.monKeys].reverse().forEach((m, revI) => {
     const i = d.nMons - 1 - revI;
-    const regVal = i === d.nMons - 1 ? d.monRegLine[i] : null;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${m}</td>
       <td>${fmt(d.monVals[i])}</td>
-      <td>${regVal != null ? fmt(Math.round(regVal)) : '—'}</td>
+      <td>${fmt(Math.round(d.monBestFit[i]))}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -950,13 +969,13 @@ function renderMonthlyTable(d) {
 
 /* 17. Pie Chart – total reporting per year */
 function renderPieChart(d) {
-  const colors = pieColors(d.years.length);
+  const colors = pieColors(d.pieDisplayYears.length);
   makeChart('chart-pie', {
     type: 'pie',
     data: {
-      labels: d.years,
+      labels: d.pieDisplayYears,
       datasets: [{
-        data: d.yTotals,
+        data: d.pieDisplayTotals,
         backgroundColor: colors,
         borderColor: 'rgba(10,22,40,.6)',
         borderWidth: 1.5
@@ -979,14 +998,14 @@ function renderPieChart(d) {
   // Custom legend
   const legendEl = document.getElementById('pie-legend');
   legendEl.innerHTML = '';
-  d.years.forEach((y, i) => {
-    const pct = ((d.yTotals[i] / d.totalAll) * 100).toFixed(1);
+  d.pieDisplayYears.forEach((y, i) => {
+    const pct = ((d.pieDisplayTotals[i] / d.totalAll) * 100).toFixed(1);
     const item = document.createElement('div');
     item.className = 'pie-legend-item';
     item.innerHTML = `
       <span class="pie-legend-dot" style="background:${colors[i]}"></span>
       <span class="pie-legend-label">${y}</span>
-      <span class="pie-legend-value">${fmtCompact(d.yTotals[i])} (${pct}%)</span>
+      <span class="pie-legend-value">${fmtCompact(d.pieDisplayTotals[i])} (${pct}%)</span>
     `;
     legendEl.appendChild(item);
   });
@@ -996,18 +1015,64 @@ function renderPieChart(d) {
 function renderPieTable(d) {
   const tbody = document.getElementById('tbody-pie');
   tbody.innerHTML = '';
-  // Show most recent year first
-  [...d.years].reverse().forEach(y => {
-    const i = d.years.indexOf(y);
-    const pct = ((d.yTotals[i] / d.totalAll) * 100).toFixed(1);
+  d.pieDisplayYears.forEach((y, i) => {
+    const pct = ((d.pieDisplayTotals[i] / d.totalAll) * 100).toFixed(1);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${y}</td>
-      <td>${fmt(d.yTotals[i])}</td>
+      <td>${fmt(d.pieDisplayTotals[i])}</td>
       <td>${pct}%</td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+/* Last 5 Year Summary Table */
+function renderLast5YearSummary(d) {
+  const tbody = document.getElementById('tbody-5yr');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  d.fiveYrSummary.forEach(row => {
+    const isEarlier = row.year === 'Earlier';
+    const tr = document.createElement('tr');
+    if (isEarlier) tr.style.cssText = 'border-top: 2px solid var(--border-light); color: var(--text-muted);';
+    tr.innerHTML = `
+      <td>${isEarlier ? 'Earlier Years' : row.year}</td>
+      <td>${row.annTotal != null ? fmt(row.annTotal) : '—'}</td>
+      <td>${row.annGrowth != null ? fmtPct(row.annGrowth) : '—'}</td>
+      <td>${row.cumTotal != null ? fmt(row.cumTotal) : '—'}</td>
+      <td>${row.cumGrowth != null ? fmtPct(row.cumGrowth) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Theme toggle */
+function toggleTheme() {
+  const html = document.documentElement;
+  const goLight = html.getAttribute('data-theme') !== 'light';
+  if (goLight) {
+    html.setAttribute('data-theme', 'light');
+    Chart.defaults.color       = '#3a5a8a';
+    Chart.defaults.borderColor = '#c5d5ed';
+  } else {
+    html.removeAttribute('data-theme');
+    Chart.defaults.color       = '#9ab3d8';
+    Chart.defaults.borderColor = '#1c3464';
+  }
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = goLight ? '🌙' : '☀️';
+  if (window._dashData) {
+    renderDowChart(window._dashData);
+    renderDomChart(window._dashData);
+    renderMoyChart(window._dashData);
+    renderCumulativeChart(window._dashData);
+    renderNonCumChart(window._dashData);
+    renderDaily60Chart(window._dashData);
+    renderWeeklyChart(window._dashData);
+    renderMonthlyChart(window._dashData);
+    renderPieChart(window._dashData);
+  }
 }
 
 // ── Header metadata ───────────────────────────────────────
@@ -1031,6 +1096,7 @@ async function init() {
   try {
     const raw  = await fetchData();
     const data = processData(raw);
+    window._dashData = data;
 
     renderMeta(data);
     renderTotalCounts(data);
@@ -1051,6 +1117,7 @@ async function init() {
     renderMonthlyTable(data);
     renderPieChart(data);
     renderPieTable(data);
+    renderLast5YearSummary(data);
 
     document.getElementById('loading-overlay').style.display = 'none';
   } catch (err) {
