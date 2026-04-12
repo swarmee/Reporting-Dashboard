@@ -39,6 +39,7 @@
       <span class="meta-value" id="data-period">—</span>
     </div>
   </div>
+  <button id="theme-toggle" class="theme-toggle-btn" title="Toggle light/dark theme" onclick="toggleTheme()">☀️</button>
 </header>
 
 <!-- ── Main Dashboard Grid ───────────────────────────────── -->
@@ -125,7 +126,7 @@
     </div>
   </section>
 
-  <!-- Row 2: Growth Metrics | Day-of-Week Chart -->
+  <!-- Row 2: Growth Metrics | Last 5 Year Summary -->
 
   <!-- Panel 3 – Reporting Growth Metrics -->
   <section class="panel">
@@ -168,51 +169,32 @@
     </div>
   </section>
 
-  <!-- Panel 4 – Day-of-Week Average (last 365 days) -->
+  <!-- Panel: Last 5 Year Summary Table -->
   <section class="panel">
     <div class="panel-header">
-      <span class="panel-icon">📅</span>
-      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days</h2>
+      <span class="panel-icon">📋</span>
+      <h2 class="panel-title">Last 5 Year Summary Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
-    <div class="panel-body">
-      <div class="chart-container">
-        <canvas id="chart-dow"></canvas>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Annual Total</th>
+              <th>Annual Growth</th>
+              <th>Cumulative Total</th>
+              <th>Cumulative Growth</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-5yr"></tbody>
+        </table>
       </div>
     </div>
   </section>
 
-  <!-- Row 3: Day-of-Month Chart | Month-of-Year Chart -->
-
-  <!-- Panel 5 – Day of Month Average Count (last 2 years) -->
-  <section class="panel">
-    <div class="panel-header">
-      <span class="panel-icon">🗓️</span>
-      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years</h2>
-      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
-    </div>
-    <div class="panel-body">
-      <div class="chart-container">
-        <canvas id="chart-dom"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <!-- Panel 6 – Month of Year Average Count (last 5 years) -->
-  <section class="panel">
-    <div class="panel-header">
-      <span class="panel-icon">📆</span>
-      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years</h2>
-      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
-    </div>
-    <div class="panel-body">
-      <div class="chart-container">
-        <canvas id="chart-moy"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <!-- Row 4: Cumulative Yearly Chart | Cumulative Yearly Table -->
+  <!-- Row 3: Cumulative Yearly Chart | Cumulative Yearly Table -->
 
   <!-- Panel 7 – Cumulative Yearly Reporting Chart -->
   <section class="panel">
@@ -320,7 +302,7 @@
             <tr>
               <th>Date</th>
               <th>Daily Count</th>
-              <th>Linear Regression</th>
+              <th>7-Day Moving Avg</th>
             </tr>
           </thead>
           <tbody id="tbody-daily60"></tbody>
@@ -359,7 +341,7 @@
             <tr>
               <th>ISO Week</th>
               <th>Weekly Count</th>
-              <th>Linear Regression</th>
+              <th>Line of Best Fit</th>
             </tr>
           </thead>
           <tbody id="tbody-weekly"></tbody>
@@ -398,7 +380,7 @@
             <tr>
               <th>Month</th>
               <th>Monthly Count</th>
-              <th>Linear Regression</th>
+              <th>Line of Best Fit</th>
             </tr>
           </thead>
           <tbody id="tbody-monthly"></tbody>
@@ -445,6 +427,50 @@
           </thead>
           <tbody id="tbody-pie"></tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Row: Periodicity Charts -->
+
+  <!-- Panel – Day-of-Week Average (last 365 days) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📅</span>
+      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-dow"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel – Day of Month Average Count (last 2 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗓️</span>
+      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-dom"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel – Month of Year Average Count (last 5 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📆</span>
+      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-moy"></canvas>
       </div>
     </div>
   </section>
