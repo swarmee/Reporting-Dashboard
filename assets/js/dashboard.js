@@ -115,6 +115,8 @@ function parseLocalDate(str) {
 }
 
 function weekOfYear(d) {
+  // Calendar week bin (Jan 1 starts week 1), used intentionally for
+  // year-over-year overlay on a Jan→Dec timeline rather than ISO week-year.
   const yearStart = new Date(d.getFullYear(), 0, 1);
   const dayNum = Math.floor((d - yearStart) / 86400000) + 1;
   return Math.floor((dayNum - 1) / 7) + 1;
