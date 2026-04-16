@@ -96,9 +96,9 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 10 | **Weekly Reporting Table** | Tabular data matching panel 9 (most recent first) |
 | 11 | **Monthly Reporting Chart** | Bar chart for the last 2 years + 3-month moving average line |
 | 12 | **Monthly Reporting Table** | Tabular data matching panel 11 (most recent first) |
-| 13 | **Weekly cumulative reporting comparison - Last 3 years** | Cumulative line chart by week-of-year for current and previous 2 calendar years |
-| 14 | **Weekly cumulative reporting comparison - Last 3 years Table** | Tabular cumulative weekly values for the same 3 years |
-| 15 | **Yearly Share Pie Chart** | Pie chart of total count per year |
+| 17 | **Weekly cumulative reporting comparison - Last 3 years** | Cumulative line chart by week-of-year for current and previous 2 calendar years |
+| 18 | **Weekly cumulative reporting comparison - Last 3 years Table** | Tabular cumulative weekly values for the same 3 years |
+| 19 | **Yearly Share Pie Chart** | Pie chart of total count per year |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next

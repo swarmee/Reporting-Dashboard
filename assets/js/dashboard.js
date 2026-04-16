@@ -180,7 +180,6 @@ function processData(raw) {
   const currentYear = new Date().getFullYear();
   const currentMon  = today.slice(0, 7);
   const currentWeek = weekOfYear(parseLocalDate(today));
-  const currentWeekIdx = currentWeek - 1;
 
   const last365Start = addDays(today, -365);
   const prev365Start = addDays(today, -730);
@@ -449,7 +448,7 @@ function processData(raw) {
     let running = 0;
     return weeklyYearTotals[y].map((v, idx) => {
       running += v;
-      if (y === String(currentYear) && idx > currentWeekIdx) return null;
+      if (y === String(currentYear) && idx >= currentWeek) return null;
       return running;
     });
   });
