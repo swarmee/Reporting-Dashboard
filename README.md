@@ -28,7 +28,7 @@ Reporting-Dashboard/
 ├── index.html                  # Single-page dashboard (entry point)
 ├── assets/
 │   ├── css/
-│   │   └── style.css           # Dark professional theme + print media query
+│   │   └── style.css           # Theme variables (light default, dark toggle) + print media query
 │   └── js/
 │       ├── chart.umd.min.js    # Chart.js v4.5.1 (bundled, no CDN needed)
 │       └── dashboard.js        # All data-fetching, processing & chart logic
@@ -43,7 +43,7 @@ Reporting-Dashboard/
 | File | Purpose |
 |------|---------|
 | `index.html` | Defines the two-column grid layout, all panel skeletons, and links to assets. |
-| `assets/css/style.css` | CSS custom-properties–based dark theme.  `@media print` block preserves the dark theme in PDF output via `print-color-adjust: exact`. |
+| `assets/css/style.css` | CSS custom-properties theme (light by default, dark via toggle). `@media print` block preserves dashboard colours in PDF output via `print-color-adjust: exact`. |
 | `assets/js/dashboard.js` | Fetches data from the API, performs all calculations (totals, stats, regressions, moving averages), and renders every Chart.js chart and data table. |
 | `assets/js/chart.umd.min.js` | Chart.js v4.5.1 UMD bundle — **no internet required**. |
 | `serve.py` | Python 3 HTTP server.  Serves static files via `http.server.SimpleHTTPRequestHandler` and intercepts `GET /v1/reporting` to return synthetic historical data (1970–today, ~2.5 B total). |
@@ -96,7 +96,9 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 10 | **Weekly Reporting Table** | Tabular data matching panel 9 (most recent first) |
 | 11 | **Monthly Reporting Chart** | Bar chart for the last 2 years + 3-month moving average line |
 | 12 | **Monthly Reporting Table** | Tabular data matching panel 11 (most recent first) |
-| 13 | **Yearly Share Pie Chart** | Pie chart of total count per year (full width) |
+| 13 | **Weekly cumulative reporting comparison - Last 3 years** | Cumulative line chart by week-of-year for current and previous 2 calendar years |
+| 14 | **Weekly cumulative reporting comparison - Last 3 years- Table** | Tabular cumulative weekly values for the same 3 years |
+| 15 | **Yearly Share Pie Chart** | Pie chart of total count per year |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next
@@ -209,8 +211,8 @@ Open the dashboard in your browser, then use **File → Print** (or
 The `@media print` CSS block:
 
 * Sets the page to **A3 landscape** for wide charts.
-* Uses `print-color-adjust: exact` so that the dark theme backgrounds and
-  chart colours are preserved in the PDF exactly as they appear on screen.
+* Uses `print-color-adjust: exact` so that dashboard backgrounds and chart
+  colours are preserved in the PDF exactly as they appear on screen.
 * Applies `break-inside: avoid` to each panel card so charts and tables are
   not split across pages.
 * Removes animated overlays.
