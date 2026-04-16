@@ -22,8 +22,9 @@ const CONFIG = {
 };
 
 // ── Chart defaults ─────────────────────────────────────────
-Chart.defaults.color = '#9ab3d8';
-Chart.defaults.borderColor = '#1c3464';
+const isInitialLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
+Chart.defaults.color = isInitialLightTheme ? '#3a5a8a' : '#9ab3d8';
+Chart.defaults.borderColor = isInitialLightTheme ? '#c5d5ed' : '#1c3464';
 Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 Chart.defaults.font.size = 11;
 
@@ -113,6 +114,14 @@ function parseLocalDate(str) {
   return new Date(y, m - 1, d);
 }
 
+function weekOfYear(d) {
+  // Calendar week bin (Jan 1 starts week 1), used intentionally for
+  // year-over-year overlay on a Jan→Dec timeline rather than ISO week-year.
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const dayNum = Math.floor((d - yearStart) / 86400000) + 1;
+  return Math.floor((dayNum - 1) / 7) + 1;
+}
+
 function isoWeekLabel(d) {
   const nd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   nd.setDate(nd.getDate() + 3 - ((nd.getDay() + 6) % 7));
@@ -170,6 +179,7 @@ function processData(raw) {
   const today       = todayStr();
   const currentYear = new Date().getFullYear();
   const currentMon  = today.slice(0, 7);
+  const currentWeek = weekOfYear(parseLocalDate(today));
 
   const last365Start = addDays(today, -365);
   const prev365Start = addDays(today, -730);
@@ -416,6 +426,33 @@ function processData(raw) {
     return null;
   });
 
+  // ── Weekly cumulative comparison (current + previous 2 years) ─────────────
+  const weeklyCumYears = [currentYear, currentYear - 1, currentYear - 2].map(String);
+  const maxWeeks = Math.max(
+    ...weeklyCumYears.map(y => weekOfYear(new Date(Number(y), 11, 31)))
+  );
+  const weeklyCumWeekLabels = Array.from(
+    { length: maxWeeks },
+    (_, i) => `W${String(i + 1).padStart(2, '0')}`
+  );
+  const weeklyYearTotals = Object.fromEntries(
+    weeklyCumYears.map(y => [y, Array(maxWeeks).fill(0)])
+  );
+  records.forEach(r => {
+    const y = r.date.slice(0, 4);
+    if (!weeklyYearTotals[y]) return;
+    const w = weekOfYear(parseLocalDate(r.date)) - 1;
+    if (w >= 0 && w < maxWeeks) weeklyYearTotals[y][w] += r.count;
+  });
+  const weeklyCumSeries = weeklyCumYears.map(y => {
+    let running = 0;
+    return weeklyYearTotals[y].map((v, idx) => {
+      running += v;
+      if (y === String(currentYear) && idx >= currentWeek) return null;
+      return running;
+    });
+  });
+
   // ── Last 5 Year Summary ─────────────────────────────────────────
   const fiveYrSummary = [];
   for (let offset = 0; offset < 5; offset++) {
@@ -485,6 +522,10 @@ function processData(raw) {
     monAllKeys, monBarData, monRegLine, monBestFit,
     monKeys, monVals, monForecastKeys,
     nMons,
+    // weekly cumulative comparison
+    weeklyCumWeekLabels,
+    weeklyCumYears,
+    weeklyCumSeries,
     // 5-year summary
     fiveYrSummary,
     // pie
@@ -967,7 +1008,61 @@ function renderMonthlyTable(d) {
   });
 }
 
-/* 17. Pie Chart – total reporting per year */
+/* 17. Weekly cumulative comparison chart (last 3 years) */
+function renderWeeklyCumulativeComparisonChart(d) {
+  const lineColors = [COLORS.blue, COLORS.teal, COLORS.purple];
+  makeChart('chart-weekly-cum-3yr', {
+    type: 'line',
+    data: {
+      labels: d.weeklyCumWeekLabels,
+      datasets: d.weeklyCumYears.map((year, i) => ({
+        label: year,
+        data: d.weeklyCumSeries[i],
+        borderColor: lineColors[i] || COLORS.amber,
+        backgroundColor: 'transparent',
+        borderWidth: i === 0 ? 3.5 : 2,
+        pointRadius: 0,
+        tension: 0.2,
+        spanGaps: false
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
+      },
+      scales: { x: xScale(10), y: yScale('Cumulative Volume') }
+    }
+  });
+}
+
+/* 18. Weekly cumulative comparison table (last 3 years) */
+function renderWeeklyCumulativeComparisonTable(d) {
+  const [y0, y1, y2] = d.weeklyCumYears;
+  const th0 = document.getElementById('th-weekly-cum-y0');
+  const th1 = document.getElementById('th-weekly-cum-y1');
+  const th2 = document.getElementById('th-weekly-cum-y2');
+  if (th0) th0.textContent = `${y0} Cumulative`;
+  if (th1) th1.textContent = `${y1} Cumulative`;
+  if (th2) th2.textContent = `${y2} Cumulative`;
+
+  const tbody = document.getElementById('tbody-weekly-cum-3yr');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  d.weeklyCumWeekLabels.forEach((week, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${week}</td>
+      <td>${d.weeklyCumSeries[0][i] != null ? fmt(d.weeklyCumSeries[0][i]) : '—'}</td>
+      <td>${d.weeklyCumSeries[1][i] != null ? fmt(d.weeklyCumSeries[1][i]) : '—'}</td>
+      <td>${d.weeklyCumSeries[2][i] != null ? fmt(d.weeklyCumSeries[2][i]) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* 19. Pie Chart – total reporting per year */
 function renderPieChart(d) {
   const colors = pieColors(d.pieDisplayYears.length);
   makeChart('chart-pie', {
@@ -1011,7 +1106,7 @@ function renderPieChart(d) {
   });
 }
 
-/* 18. Pie Table – total reporting per year */
+/* 20. Pie Table – total reporting per year */
 function renderPieTable(d) {
   const tbody = document.getElementById('tbody-pie');
   tbody.innerHTML = '';
@@ -1070,6 +1165,7 @@ function toggleTheme() {
     renderNonCumChart(window._dashData);
     renderDaily60Chart(window._dashData);
     renderWeeklyChart(window._dashData);
+    renderWeeklyCumulativeComparisonChart(window._dashData);
     renderMonthlyChart(window._dashData);
     renderPieChart(window._dashData);
   }
@@ -1113,6 +1209,8 @@ async function init() {
     renderDaily60Table(data);
     renderWeeklyChart(data);
     renderWeeklyTable(data);
+    renderWeeklyCumulativeComparisonChart(data);
+    renderWeeklyCumulativeComparisonTable(data);
     renderMonthlyChart(data);
     renderMonthlyTable(data);
     renderPieChart(data);

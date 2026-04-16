@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -39,7 +39,7 @@
       <span class="meta-value" id="data-period">—</span>
     </div>
   </div>
-  <button id="theme-toggle" class="theme-toggle-btn" title="Toggle light/dark theme" onclick="toggleTheme()">☀️</button>
+  <button id="theme-toggle" class="theme-toggle-btn" title="Toggle light/dark theme" onclick="toggleTheme()">🌙</button>
 </header>
 
 <!-- ── Main Dashboard Grid ───────────────────────────────── -->
@@ -389,9 +389,49 @@
     </div>
   </section>
 
-  <!-- Row 9: Pie Chart | Pie Table -->
+  <!-- Row 9: Weekly cumulative reporting comparison | table -->
 
-  <!-- Panel 17 – Pie Chart: Total reporting per year -->
+  <!-- Panel 17 – Weekly cumulative reporting comparison -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📈</span>
+      <h2 class="panel-title">Weekly cumulative reporting comparison - Last 3 years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-weekly-cum-3yr"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel 18 – Weekly cumulative reporting comparison table -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Weekly cumulative reporting comparison - Last 3 years- Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th id="th-weekly-cum-y0">Year 1 Cumulative</th>
+              <th id="th-weekly-cum-y1">Year 2 Cumulative</th>
+              <th id="th-weekly-cum-y2">Year 3 Cumulative</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-weekly-cum-3yr"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row 10: Pie Chart | Pie Table -->
+
+  <!-- Panel 19 – Pie Chart: Total reporting per year -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🥧</span>
@@ -408,7 +448,7 @@
     </div>
   </section>
 
-  <!-- Panel 18 – Pie Table: Total reporting per year -->
+  <!-- Panel 20 – Pie Table: Total reporting per year -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
