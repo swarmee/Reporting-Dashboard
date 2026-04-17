@@ -426,8 +426,8 @@ function processData(raw) {
     return null;
   });
 
-  // ── Weekly cumulative comparison (current + previous 2 years) ─────────────
-  const weeklyCumYears = [currentYear, currentYear - 1, currentYear - 2].map(String);
+  // ── Weekly cumulative comparison (current + previous 3 years) ─────────────
+  const weeklyCumYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3].map(String);
   const maxWeeks = Math.max(
     ...weeklyCumYears.map(y => weekOfYear(new Date(Number(y), 11, 31)))
   );
@@ -1008,10 +1008,10 @@ function renderMonthlyTable(d) {
   });
 }
 
-/* 17. Weekly cumulative comparison chart (last 3 years) */
+/* 17. Weekly cumulative comparison chart (last 4 years) */
 function renderWeeklyCumulativeComparisonChart(d) {
-  const lineColors = [COLORS.blue, COLORS.teal, COLORS.purple];
-  makeChart('chart-weekly-cum-3yr', {
+  const lineColors = [COLORS.blue, COLORS.teal, COLORS.purple, COLORS.amber];
+  makeChart('chart-weekly-cum-4yr', {
     type: 'line',
     data: {
       labels: d.weeklyCumWeekLabels,
@@ -1037,17 +1037,19 @@ function renderWeeklyCumulativeComparisonChart(d) {
   });
 }
 
-/* 18. Weekly cumulative comparison table (last 3 years) */
+/* 18. Weekly cumulative comparison table (last 4 years) */
 function renderWeeklyCumulativeComparisonTable(d) {
-  const [y0, y1, y2] = d.weeklyCumYears;
+  const [y0, y1, y2, y3] = d.weeklyCumYears;
   const th0 = document.getElementById('th-weekly-cum-y0');
   const th1 = document.getElementById('th-weekly-cum-y1');
   const th2 = document.getElementById('th-weekly-cum-y2');
+  const th3 = document.getElementById('th-weekly-cum-y3');
   if (th0) th0.textContent = `${y0} Cumulative`;
   if (th1) th1.textContent = `${y1} Cumulative`;
   if (th2) th2.textContent = `${y2} Cumulative`;
+  if (th3) th3.textContent = `${y3} Cumulative`;
 
-  const tbody = document.getElementById('tbody-weekly-cum-3yr');
+  const tbody = document.getElementById('tbody-weekly-cum-4yr');
   if (!tbody) return;
   tbody.innerHTML = '';
   d.weeklyCumWeekLabels.forEach((week, i) => {
@@ -1057,6 +1059,55 @@ function renderWeeklyCumulativeComparisonTable(d) {
       <td>${d.weeklyCumSeries[0][i] != null ? fmt(d.weeklyCumSeries[0][i]) : '—'}</td>
       <td>${d.weeklyCumSeries[1][i] != null ? fmt(d.weeklyCumSeries[1][i]) : '—'}</td>
       <td>${d.weeklyCumSeries[2][i] != null ? fmt(d.weeklyCumSeries[2][i]) : '—'}</td>
+      <td>${d.weeklyCumSeries[3][i] != null ? fmt(d.weeklyCumSeries[3][i]) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Day-of-Week Table (last 365 days) */
+function renderDowTable(d) {
+  const tbody = document.getElementById('tbody-dow');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  labels.forEach((label, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${label}</td>
+      <td>${fmt(Math.round(d.dowAvg[i]))}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Day-of-Month Table (last 2 years) */
+function renderDomTable(d) {
+  const tbody = document.getElementById('tbody-dom');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  d.domAvg.forEach((value, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${value != null ? fmt(Math.round(value)) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Month-of-Year Table (last 5 years) */
+function renderMoyTable(d) {
+  const tbody = document.getElementById('tbody-moy');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  labels.forEach((label, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${label}</td>
+      <td>${fmt(Math.round(d.moyAvg[i]))}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1199,8 +1250,11 @@ async function init() {
     renderDailyStats(data);
     renderGrowth(data);
     renderDowChart(data);
+    renderDowTable(data);
     renderDomChart(data);
+    renderDomTable(data);
     renderMoyChart(data);
+    renderMoyTable(data);
     renderCumulativeChart(data);
     renderCumTable(data);
     renderNonCumChart(data);
