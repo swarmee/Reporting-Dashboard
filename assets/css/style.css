@@ -596,7 +596,7 @@ body {
 
   .chart-container { min-height: 200px; }
 
-  .data-table-wrapper { overflow: hidden; }
+  .data-table-wrapper { overflow: hidden; max-height: none !important; }
 
   .panel-expand-btn { display: none; }
 

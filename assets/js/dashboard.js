@@ -162,11 +162,13 @@ function onFullscreenChange() {
       Object.values(chartInstances).forEach(chart => {
         try { chart.resize(); } catch (e) { /* ignore */ }
       });
+      snapDataTableWrapperHeights();
     }, 150);
   }
 }
 document.addEventListener('fullscreenchange', onFullscreenChange);
 document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+window.addEventListener('resize', snapDataTableWrapperHeights);
 
 // ── Data processing ───────────────────────────────────────
 function processData(raw) {
@@ -231,6 +233,15 @@ function processData(raw) {
     dowBuckets[dow].push(r.count);
   });
   const dowAvg = dowBuckets.map(b => arrMean(b));
+  const dowRecent = Array(7).fill(null);
+  let dowRemaining = 7;
+  for (let i = records.length - 1; i >= 0 && dowRemaining > 0; i--) {
+    const dow = (parseLocalDate(records[i].date).getDay() + 6) % 7;
+    if (dowRecent[dow] == null) {
+      dowRecent[dow] = records[i].count;
+      dowRemaining--;
+    }
+  }
 
   // ── Day-of-Month averages (last 2 years) ───────────────
   const domBuckets = Array.from({ length: 31 }, () => []);
@@ -239,6 +250,15 @@ function processData(raw) {
     domBuckets[day].push(r.count);
   });
   const domAvg = domBuckets.map(b => b.length ? arrMean(b) : null);
+  const domRecent = Array(31).fill(null);
+  let domRemaining = 31;
+  for (let i = records.length - 1; i >= 0 && domRemaining > 0; i--) {
+    const day = parseInt(records[i].date.slice(8, 10), 10) - 1;
+    if (domRecent[day] == null) {
+      domRecent[day] = records[i].count;
+      domRemaining--;
+    }
+  }
 
   // ── Month-of-Year averages (last 5 years) ──────────────
   // Group daily records into monthly totals, then average by month-of-year
@@ -253,6 +273,11 @@ function processData(raw) {
     moyBuckets[mon].push(v);
   });
   const moyAvg = moyBuckets.map(b => b.length ? arrMean(b) : 0);
+  const moyRecent = Array(12).fill(null);
+  Object.keys(moyMonthlyMap).sort().forEach(m => {
+    const mon = parseInt(m.slice(5, 7), 10) - 1;
+    moyRecent[mon] = moyMonthlyMap[m];
+  });
 
   // ── Yearly aggregates ──────────────────────────────────
   const yearMap = {};
@@ -501,10 +526,10 @@ function processData(raw) {
     sum30,  sumPrev30,  growth30,
     sum7,   sumPrev7,   growth7,
     // dow
-    dowAvg,
+    dowAvg, dowRecent,
     // dom / moy
-    domAvg,
-    moyAvg,
+    domAvg, domRecent,
+    moyAvg, moyRecent,
     // yearly
     years, yTotals, yCumulative,
     allYearLabels, barNonCum, barCum,
@@ -631,22 +656,32 @@ function renderDowChart(d) {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: 'Avg Daily Count',
-        data: d.dowAvg,
-        backgroundColor: labels.map((_, i) =>
-          i < 5 ? COLORS.blueA.replace('.25', '.7') : COLORS.tealA.replace('.25', '.7')
-        ),
-        borderColor: labels.map((_, i) => i < 5 ? COLORS.blue : COLORS.teal),
-        borderWidth: 1.5,
-        borderRadius: 4
-      }]
+      datasets: [
+        {
+          label: 'Avg Daily Count',
+          data: d.dowAvg,
+          backgroundColor: labels.map((_, i) =>
+            i < 5 ? COLORS.blueA.replace('.25', '.7') : COLORS.tealA.replace('.25', '.7')
+          ),
+          borderColor: labels.map((_, i) => i < 5 ? COLORS.blue : COLORS.teal),
+          borderWidth: 1.5,
+          borderRadius: 4
+        },
+        {
+          label: 'Most Recent Daily Volume',
+          data: d.dowRecent,
+          backgroundColor: COLORS.amberA.replace('.25', '.7'),
+          borderColor: COLORS.amber,
+          borderWidth: 1.5,
+          borderRadius: 4
+        }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + fmtCompact(ctx.parsed.y) } }
+        legend: { labels: { boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
       },
       scales: { x: xScale(7), y: yScale() }
     }
@@ -660,20 +695,30 @@ function renderDomChart(d) {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: 'Avg Daily Count',
-        data: d.domAvg,
-        backgroundColor: COLORS.blueA.replace('.25', '.65'),
-        borderColor: COLORS.blue,
-        borderWidth: 1.5,
-        borderRadius: 3
-      }]
+      datasets: [
+        {
+          label: 'Avg Daily Count',
+          data: d.domAvg,
+          backgroundColor: COLORS.blueA.replace('.25', '.65'),
+          borderColor: COLORS.blue,
+          borderWidth: 1.5,
+          borderRadius: 3
+        },
+        {
+          label: 'Most Recent Daily Volume',
+          data: d.domRecent,
+          backgroundColor: COLORS.amberA.replace('.25', '.65'),
+          borderColor: COLORS.amber,
+          borderWidth: 1.5,
+          borderRadius: 3
+        }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + fmtCompact(ctx.parsed.y) } }
+        legend: { labels: { boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
       },
       scales: { x: xScale(31), y: yScale('Avg Daily Count') }
     }
@@ -688,20 +733,30 @@ function renderMoyChart(d) {
     type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: 'Avg Monthly Count',
-        data: d.moyAvg,
-        backgroundColor: COLORS.tealA.replace('.25', '.65'),
-        borderColor: COLORS.teal,
-        borderWidth: 1.5,
-        borderRadius: 3
-      }]
+      datasets: [
+        {
+          label: 'Avg Monthly Count',
+          data: d.moyAvg,
+          backgroundColor: COLORS.tealA.replace('.25', '.65'),
+          borderColor: COLORS.teal,
+          borderWidth: 1.5,
+          borderRadius: 3
+        },
+        {
+          label: 'Most Recent Monthly Volume',
+          data: d.moyRecent,
+          backgroundColor: COLORS.amberA.replace('.25', '.65'),
+          borderColor: COLORS.amber,
+          borderWidth: 1.5,
+          borderRadius: 3
+        }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ' ' + fmtCompact(ctx.parsed.y) } }
+        legend: { labels: { boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
       },
       scales: { x: xScale(12), y: yScale('Avg Monthly Count') }
     }
@@ -1076,6 +1131,7 @@ function renderDowTable(d) {
     tr.innerHTML = `
       <td>${label}</td>
       <td>${fmt(Math.round(d.dowAvg[i]))}</td>
+      <td>${d.dowRecent[i] != null ? fmt(d.dowRecent[i]) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1091,6 +1147,7 @@ function renderDomTable(d) {
     tr.innerHTML = `
       <td>${i + 1}</td>
       <td>${value != null ? fmt(Math.round(value)) : '—'}</td>
+      <td>${d.domRecent[i] != null ? fmt(d.domRecent[i]) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1108,8 +1165,32 @@ function renderMoyTable(d) {
     tr.innerHTML = `
       <td>${label}</td>
       <td>${fmt(Math.round(d.moyAvg[i]))}</td>
+      <td>${d.moyRecent[i] != null ? fmt(d.moyRecent[i]) : '—'}</td>
     `;
     tbody.appendChild(tr);
+  });
+}
+
+function snapDataTableWrapperHeights() {
+  document.querySelectorAll('.data-table-wrapper').forEach(wrapper => {
+    const table = wrapper.querySelector('table');
+    const headRow = table?.querySelector('thead tr');
+    const bodyRow = table?.querySelector('tbody tr');
+    if (!headRow || !bodyRow) return;
+
+    if (!wrapper.dataset.baseMaxHeight) {
+      const baseMaxHeight = parseFloat(getComputedStyle(wrapper).maxHeight);
+      if (!Number.isFinite(baseMaxHeight) || baseMaxHeight <= 0) return;
+      wrapper.dataset.baseMaxHeight = String(baseMaxHeight);
+    }
+
+    const baseMaxHeight = Number(wrapper.dataset.baseMaxHeight);
+    const headerHeight = Math.ceil(headRow.getBoundingClientRect().height);
+    const rowHeight = Math.ceil(bodyRow.getBoundingClientRect().height);
+    if (!(baseMaxHeight > 0 && headerHeight > 0 && rowHeight > 0)) return;
+
+    const visibleRows = Math.max(1, Math.floor((baseMaxHeight - headerHeight) / rowHeight));
+    wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
 }
 
@@ -1270,6 +1351,7 @@ async function init() {
     renderPieChart(data);
     renderPieTable(data);
     renderLast5YearSummary(data);
+    snapDataTableWrapperHeights();
 
     document.getElementById('loading-overlay').style.display = 'none';
   } catch (err) {
