@@ -274,10 +274,12 @@ function processData(raw) {
   });
   const moyAvg = moyBuckets.map(b => b.length ? arrMean(b) : 0);
   const moyRecent = Array(12).fill(null);
-  Object.keys(moyMonthlyMap).sort().forEach(m => {
+  const sortedMoyMonths = Object.keys(moyMonthlyMap).sort();
+  for (let i = sortedMoyMonths.length - 1; i >= 0; i--) {
+    const m = sortedMoyMonths[i];
     const mon = parseInt(m.slice(5, 7), 10) - 1;
-    moyRecent[mon] = moyMonthlyMap[m];
-  });
+    if (moyRecent[mon] == null) moyRecent[mon] = moyMonthlyMap[m];
+  }
 
   // ── Yearly aggregates ──────────────────────────────────
   const yearMap = {};
