@@ -275,10 +275,14 @@ function processData(raw) {
   const moyAvg = moyBuckets.map(b => b.length ? arrMean(b) : 0);
   const moyRecent = Array(12).fill(null);
   const sortedMoyMonths = Object.keys(moyMonthlyMap).sort();
-  for (let i = sortedMoyMonths.length - 1; i >= 0; i--) {
+  let moyRemaining = 12;
+  for (let i = sortedMoyMonths.length - 1; i >= 0 && moyRemaining > 0; i--) {
     const m = sortedMoyMonths[i];
     const mon = parseInt(m.slice(5, 7), 10) - 1;
-    if (moyRecent[mon] == null) moyRecent[mon] = moyMonthlyMap[m];
+    if (moyRecent[mon] == null) {
+      moyRecent[mon] = moyMonthlyMap[m];
+      moyRemaining--;
+    }
   }
 
   // ── Yearly aggregates ──────────────────────────────────
@@ -1181,7 +1185,9 @@ function snapDataTableWrapperHeights() {
     if (!headRow || !bodyRow) return;
 
     if (!wrapper.dataset.baseMaxHeight) {
-      const baseMaxHeight = parseFloat(getComputedStyle(wrapper).maxHeight);
+      const computedMaxHeight = getComputedStyle(wrapper).maxHeight;
+      if (computedMaxHeight === 'none') return;
+      const baseMaxHeight = parseFloat(computedMaxHeight);
       if (!Number.isFinite(baseMaxHeight) || baseMaxHeight <= 0) return;
       wrapper.dataset.baseMaxHeight = String(baseMaxHeight);
     }
