@@ -173,7 +173,7 @@
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📋</span>
-      <h2 class="panel-title">Last 5 Year Summary Table</h2>
+      <h2 class="panel-title">Last 5 Years Summary Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -395,12 +395,12 @@
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📈</span>
-      <h2 class="panel-title">Weekly cumulative reporting comparison - Last 3 years</h2>
+      <h2 class="panel-title">Weekly Cumulative Reporting Comparison — Last 4 Years</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
-        <canvas id="chart-weekly-cum-3yr"></canvas>
+        <canvas id="chart-weekly-cum-4yr"></canvas>
       </div>
     </div>
   </section>
@@ -409,7 +409,7 @@
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
-      <h2 class="panel-title">Weekly cumulative reporting comparison - Last 3 years - Table</h2>
+      <h2 class="panel-title">Weekly Cumulative Reporting Comparison — Last 4 Years — Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -421,9 +421,10 @@
               <th id="th-weekly-cum-y0">Year 1 Cumulative</th>
               <th id="th-weekly-cum-y1">Year 2 Cumulative</th>
               <th id="th-weekly-cum-y2">Year 3 Cumulative</th>
+              <th id="th-weekly-cum-y3">Year 4 Cumulative</th>
             </tr>
           </thead>
-          <tbody id="tbody-weekly-cum-3yr"></tbody>
+          <tbody id="tbody-weekly-cum-4yr"></tbody>
         </table>
       </div>
     </div>
@@ -487,6 +488,28 @@
     </div>
   </section>
 
+  <!-- Panel – Day-of-Week Average Table (last 365 days) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Day of Week</th>
+              <th>Avg Daily Count</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-dow"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <!-- Panel – Day of Month Average Count (last 2 years) -->
   <section class="panel">
     <div class="panel-header">
@@ -501,6 +524,28 @@
     </div>
   </section>
 
+  <!-- Panel – Day-of-Month Average Table (last 2 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Day of Month</th>
+              <th>Avg Daily Count</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-dom"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <!-- Panel – Month of Year Average Count (last 5 years) -->
   <section class="panel">
     <div class="panel-header">
@@ -511,6 +556,28 @@
     <div class="panel-body">
       <div class="chart-container">
         <canvas id="chart-moy"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel – Month-of-Year Average Table (last 5 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Month of Year</th>
+              <th>Avg Monthly Count</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-moy"></tbody>
+        </table>
       </div>
     </div>
   </section>

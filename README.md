@@ -96,9 +96,12 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 10 | **Weekly Reporting Table** | Tabular data matching panel 9 (most recent first) |
 | 11 | **Monthly Reporting Chart** | Bar chart for the last 2 years + 3-month moving average line |
 | 12 | **Monthly Reporting Table** | Tabular data matching panel 11 (most recent first) |
-| 13 | **Weekly cumulative reporting comparison - Last 3 years** | Cumulative line chart by week-of-year for current and previous 2 calendar years |
-| 14 | **Weekly cumulative reporting comparison - Last 3 years- Table** | Tabular cumulative weekly values for the same 3 years |
+| 13 | **Weekly Cumulative Reporting Comparison — Last 4 Years** | Cumulative line chart by week-of-year for current and previous 3 calendar years |
+| 14 | **Weekly Cumulative Reporting Comparison — Last 4 Years — Table** | Tabular cumulative weekly values for the same 4 years |
 | 15 | **Yearly Share Pie Chart** | Pie chart of total count per year |
+| 16 | **Day of Week Avg Count — Last 365 Days — Table** | Tabular weekday averages matching the day-of-week chart |
+| 17 | **Day of Month Avg Count — Last 2 Years — Table** | Tabular day-of-month averages matching the day-of-month chart |
+| 18 | **Month of Year Avg Count — Last 5 Years — Table** | Tabular month-of-year averages matching the month-of-year chart |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next
