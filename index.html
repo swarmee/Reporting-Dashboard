@@ -474,11 +474,11 @@
 
   <!-- Bottom Row: Periodicity Charts -->
 
-  <!-- Panel – Day-of-Week Average (last 365 days) -->
+  <!-- Panel – Day-of-Week Boxplot (last 365 days) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📅</span>
-      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days</h2>
+      <h2 class="panel-title">Day of Week Boxplot — Last 365 Days</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
@@ -488,11 +488,11 @@
     </div>
   </section>
 
-  <!-- Panel – Day-of-Week Average Table (last 365 days) -->
+  <!-- Panel – Day-of-Week Boxplot Table (last 365 days) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
-      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days — Table</h2>
+      <h2 class="panel-title">Day of Week Boxplot — Last 365 Days — Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -501,8 +501,11 @@
           <thead>
             <tr>
               <th>Day of Week</th>
-              <th>Avg Daily Count</th>
-              <th>Most Recent Daily Volume</th>
+              <th>Min</th>
+              <th>Q1</th>
+              <th>Median</th>
+              <th>Q3</th>
+              <th>Max</th>
             </tr>
           </thead>
           <tbody id="tbody-dow"></tbody>
@@ -511,11 +514,11 @@
     </div>
   </section>
 
-  <!-- Panel – Day of Month Average Count (last 2 years) -->
+  <!-- Panel – Day-of-Month Boxplot (last 2 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗓️</span>
-      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years</h2>
+      <h2 class="panel-title">Day of Month Boxplot — Last 2 Years</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
@@ -525,11 +528,11 @@
     </div>
   </section>
 
-  <!-- Panel – Day-of-Month Average Table (last 2 years) -->
+  <!-- Panel – Day-of-Month Boxplot Table (last 2 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
-      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years — Table</h2>
+      <h2 class="panel-title">Day of Month Boxplot — Last 2 Years — Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -538,8 +541,11 @@
           <thead>
             <tr>
               <th>Day of Month</th>
-              <th>Avg Daily Count</th>
-              <th>Most Recent Daily Volume</th>
+              <th>Min</th>
+              <th>Q1</th>
+              <th>Median</th>
+              <th>Q3</th>
+              <th>Max</th>
             </tr>
           </thead>
           <tbody id="tbody-dom"></tbody>
@@ -548,11 +554,11 @@
     </div>
   </section>
 
-  <!-- Panel – Month of Year Average Count (last 5 years) -->
+  <!-- Panel – Month-of-Year Boxplot (last 5 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📆</span>
-      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years</h2>
+      <h2 class="panel-title">Month of Year Boxplot — Last 5 Years</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
@@ -562,11 +568,11 @@
     </div>
   </section>
 
-  <!-- Panel – Month-of-Year Average Table (last 5 years) -->
+  <!-- Panel – Month-of-Year Boxplot Table (last 5 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
-      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years — Table</h2>
+      <h2 class="panel-title">Month of Year Boxplot — Last 5 Years — Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -575,11 +581,56 @@
           <thead>
             <tr>
               <th>Month of Year</th>
-              <th>Avg Monthly Count</th>
-              <th>Most Recent Monthly Volume</th>
+              <th>Min</th>
+              <th>Q1</th>
+              <th>Median</th>
+              <th>Q3</th>
+              <th>Max</th>
             </tr>
           </thead>
           <tbody id="tbody-moy"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Row: Weekly Calendar Heatmap -->
+
+  <!-- Panel – Weekly calendar heatmap (last 5 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗓️</span>
+      <h2 class="panel-title">Weekly Calendar Heatmap — Last 5 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-weekly-heatmap"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel – Weekly calendar heatmap table (last 5 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Weekly Reporting Count by Year — Last 5 Years — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th id="th-weekly-heatmap-y0"></th>
+              <th id="th-weekly-heatmap-y1"></th>
+              <th id="th-weekly-heatmap-y2"></th>
+              <th id="th-weekly-heatmap-y3"></th>
+              <th id="th-weekly-heatmap-y4"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-weekly-heatmap"></tbody>
         </table>
       </div>
     </div>

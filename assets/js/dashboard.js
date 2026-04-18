@@ -80,6 +80,29 @@ function arrMedian(a) {
   return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m];
 }
 
+function arrQuantileSorted(sorted, q) {
+  if (!sorted.length) return null;
+  const pos = (sorted.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  if (sorted[base + 1] != null) {
+    return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+  }
+  return sorted[base];
+}
+
+function arrFiveNumberStats(a) {
+  if (!a.length) return { min: null, q1: null, med: null, q3: null, max: null };
+  const sorted = [...a].sort((x, y) => x - y);
+  return {
+    min: sorted[0],
+    q1: arrQuantileSorted(sorted, 0.25),
+    med: arrQuantileSorted(sorted, 0.5),
+    q3: arrQuantileSorted(sorted, 0.75),
+    max: sorted[sorted.length - 1]
+  };
+}
+
 function arrStats(a) {
   if (!a.length) return { avg: 0, max: 0, min: 0, med: 0 };
   return {
@@ -226,41 +249,23 @@ function processData(raw) {
   const sumPrev7   = arrSum(prev7.map(r => r.count));
   const growth7    = sumPrev7  > 0 ? ((sum7   - sumPrev7)   / sumPrev7)   * 100 : null;
 
-  // Day-of-week averages (last 365 days), Mon=0 … Sun=6
+  // Day-of-week boxplot stats (last 365 days), Mon=0 … Sun=6
   const dowBuckets = Array.from({ length: 7 }, () => []);
   last365.forEach(r => {
     const dow = (parseLocalDate(r.date).getDay() + 6) % 7;
     dowBuckets[dow].push(r.count);
   });
-  const dowAvg = dowBuckets.map(b => arrMean(b));
-  const dowRecent = Array(7).fill(null);
-  let dowRemaining = 7;
-  for (let i = records.length - 1; i >= 0 && dowRemaining > 0; i--) {
-    const dow = (parseLocalDate(records[i].date).getDay() + 6) % 7;
-    if (dowRecent[dow] == null) {
-      dowRecent[dow] = records[i].count;
-      dowRemaining--;
-    }
-  }
+  const dowBox = dowBuckets.map(b => arrFiveNumberStats(b));
 
-  // ── Day-of-Month averages (last 2 years) ───────────────
+  // ── Day-of-Month boxplot stats (last 2 years) ──────────
   const domBuckets = Array.from({ length: 31 }, () => []);
   records.filter(r => r.date >= twoYrStart).forEach(r => {
     const day = parseInt(r.date.slice(8, 10), 10) - 1;
     domBuckets[day].push(r.count);
   });
-  const domAvg = domBuckets.map(b => b.length ? arrMean(b) : null);
-  const domRecent = Array(31).fill(null);
-  let domRemaining = 31;
-  for (let i = records.length - 1; i >= 0 && domRemaining > 0; i--) {
-    const day = parseInt(records[i].date.slice(8, 10), 10) - 1;
-    if (domRecent[day] == null) {
-      domRecent[day] = records[i].count;
-      domRemaining--;
-    }
-  }
+  const domBox = domBuckets.map(b => arrFiveNumberStats(b));
 
-  // ── Month-of-Year averages (last 5 years) ──────────────
+  // ── Month-of-Year boxplot stats (last 5 years) ─────────
   // Group daily records into monthly totals, then average by month-of-year
   const moyMonthlyMap = {};
   records.filter(r => r.date >= fiveYrStart).forEach(r => {
@@ -272,18 +277,7 @@ function processData(raw) {
     const mon = parseInt(m.slice(5, 7), 10) - 1;
     moyBuckets[mon].push(v);
   });
-  const moyAvg = moyBuckets.map(b => b.length ? arrMean(b) : 0);
-  const moyRecent = Array(12).fill(null);
-  const sortedMoyMonths = Object.keys(moyMonthlyMap).sort();
-  let moyRemaining = 12;
-  for (let i = sortedMoyMonths.length - 1; i >= 0 && moyRemaining > 0; i--) {
-    const m = sortedMoyMonths[i];
-    const mon = parseInt(m.slice(5, 7), 10) - 1;
-    if (moyRecent[mon] == null) {
-      moyRecent[mon] = moyMonthlyMap[m];
-      moyRemaining--;
-    }
-  }
+  const moyBox = moyBuckets.map(b => arrFiveNumberStats(b));
 
   // ── Yearly aggregates ──────────────────────────────────
   const yearMap = {};
@@ -484,6 +478,34 @@ function processData(raw) {
     });
   });
 
+  // ── Weekly calendar heatmap (last 5 years) ──────────────
+  const weeklyHeatmapYears = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
+  const weeklyHeatmapMaxWeeks = Math.max(
+    ...weeklyHeatmapYears.map(y => weekOfYear(new Date(Number(y), 11, 31)))
+  );
+  const weeklyHeatmapWeekLabels = Array.from(
+    { length: weeklyHeatmapMaxWeeks },
+    (_, i) => `W${String(i + 1).padStart(2, '0')}`
+  );
+  const weeklyHeatmapYearTotals = Object.fromEntries(
+    weeklyHeatmapYears.map(y => [y, Array(weeklyHeatmapMaxWeeks).fill(0)])
+  );
+  records.forEach(r => {
+    const y = r.date.slice(0, 4);
+    if (!weeklyHeatmapYearTotals[y]) return;
+    const w = weekOfYear(parseLocalDate(r.date)) - 1;
+    if (w >= 0 && w < weeklyHeatmapMaxWeeks) weeklyHeatmapYearTotals[y][w] += r.count;
+  });
+  const weeklyHeatmapSeries = weeklyHeatmapYears.map(y =>
+    weeklyHeatmapYearTotals[y].map((v, idx) => {
+      if (y === String(currentYear) && idx >= currentWeek) return null;
+      return v;
+    })
+  );
+  const weeklyHeatmapValues = weeklyHeatmapSeries.flat().filter(v => v != null);
+  const weeklyHeatmapMin = weeklyHeatmapValues.length ? Math.min(...weeklyHeatmapValues) : 0;
+  const weeklyHeatmapMax = weeklyHeatmapValues.length ? Math.max(...weeklyHeatmapValues) : 0;
+
   // ── Last 5 Year Summary ─────────────────────────────────────────
   const fiveYrSummary = [];
   for (let offset = 0; offset < 5; offset++) {
@@ -531,11 +553,8 @@ function processData(raw) {
     sum365, sumPrev365, growth365,
     sum30,  sumPrev30,  growth30,
     sum7,   sumPrev7,   growth7,
-    // dow
-    dowAvg, dowRecent,
-    // dom / moy
-    domAvg, domRecent,
-    moyAvg, moyRecent,
+    // periodic boxplots
+    dowBox, domBox, moyBox,
     // yearly
     years, yTotals, yCumulative,
     allYearLabels, barNonCum, barCum,
@@ -557,6 +576,12 @@ function processData(raw) {
     weeklyCumWeekLabels,
     weeklyCumYears,
     weeklyCumSeries,
+    // weekly heatmap
+    weeklyHeatmapYears,
+    weeklyHeatmapWeekLabels,
+    weeklyHeatmapSeries,
+    weeklyHeatmapMin,
+    weeklyHeatmapMax,
     // 5-year summary
     fiveYrSummary,
     // pie
@@ -655,31 +680,43 @@ function renderGrowth(d) {
   setGrowth('g12', d.growth365, d.sum365, d.sumPrev365);
 }
 
-/* 4. Day-of-Week Bar Chart */
-function renderDowChart(d) {
-  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  makeChart('chart-dow', {
+function renderBoxplotChart(canvasId, labels, stats, opts = {}) {
+  const whiskers = stats.map(s => (s.min != null && s.max != null ? [s.min, s.max] : null));
+  const iqr = stats.map(s => (s.q1 != null && s.q3 != null ? [s.q1, s.q3] : null));
+  const medians = stats.map(s => (s.med != null ? s.med : null));
+  makeChart(canvasId, {
     type: 'bar',
     data: {
       labels,
       datasets: [
         {
-          label: 'Avg Daily Count',
-          data: d.dowAvg,
-          backgroundColor: labels.map((_, i) =>
-            i < 5 ? COLORS.blueA.replace('.25', '.7') : COLORS.tealA.replace('.25', '.7')
-          ),
-          borderColor: labels.map((_, i) => i < 5 ? COLORS.blue : COLORS.teal),
-          borderWidth: 1.5,
-          borderRadius: 4
+          label: 'Whiskers (Min → Max)',
+          data: whiskers,
+          backgroundColor: opts.whiskerColor || 'rgba(154,179,216,.35)',
+          borderColor: opts.whiskerBorderColor || COLORS.purple,
+          borderWidth: 1,
+          barPercentage: 0.25,
+          categoryPercentage: 0.7
         },
         {
-          label: 'Most Recent Daily Volume',
-          data: d.dowRecent,
-          backgroundColor: COLORS.amberA.replace('.25', '.7'),
-          borderColor: COLORS.amber,
+          label: 'IQR (Q1 → Q3)',
+          data: iqr,
+          backgroundColor: opts.iqrColor || COLORS.blueA.replace('.25', '.7'),
+          borderColor: opts.iqrBorderColor || COLORS.blue,
           borderWidth: 1.5,
-          borderRadius: 4
+          barPercentage: 0.65,
+          categoryPercentage: 0.7
+        },
+        {
+          type: 'line',
+          label: 'Median',
+          data: medians,
+          showLine: false,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          pointStyle: 'rect',
+          pointBackgroundColor: opts.medianColor || COLORS.amber,
+          pointBorderColor: opts.medianColor || COLORS.amber
         }
       ]
     },
@@ -687,85 +724,56 @@ function renderDowChart(d) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { labels: { boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const raw = ctx.raw;
+              if (Array.isArray(raw)) return ` ${ctx.dataset.label}: ${fmtCompact(raw[0])} → ${fmtCompact(raw[1])}`;
+              return ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}`;
+            }
+          }
+        }
       },
-      scales: { x: xScale(7), y: yScale() }
+      scales: { x: xScale(opts.maxLabels || CONFIG.MAX_X_LABELS), y: yScale(opts.yTitle) }
     }
   });
 }
 
-/* 5. Day-of-Month Bar Chart (last 2 years) */
+/* 4. Day-of-Week Boxplot (last 365 days) */
+function renderDowChart(d) {
+  renderBoxplotChart(
+    'chart-dow',
+    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    d.dowBox,
+    {
+      maxLabels: 7,
+      yTitle: 'Daily Count',
+      iqrColor: COLORS.blueA.replace('.25', '.7'),
+      iqrBorderColor: COLORS.blue
+    }
+  );
+}
+
+/* 5. Day-of-Month Boxplot (last 2 years) */
 function renderDomChart(d) {
   const labels = Array.from({ length: 31 }, (_, i) => String(i + 1));
-  makeChart('chart-dom', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Avg Daily Count',
-          data: d.domAvg,
-          backgroundColor: COLORS.blueA.replace('.25', '.65'),
-          borderColor: COLORS.blue,
-          borderWidth: 1.5,
-          borderRadius: 3
-        },
-        {
-          label: 'Most Recent Daily Volume',
-          data: d.domRecent,
-          backgroundColor: COLORS.amberA.replace('.25', '.65'),
-          borderColor: COLORS.amber,
-          borderWidth: 1.5,
-          borderRadius: 3
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
-      },
-      scales: { x: xScale(31), y: yScale('Avg Daily Count') }
-    }
+  renderBoxplotChart('chart-dom', labels, d.domBox, {
+    maxLabels: 31,
+    yTitle: 'Daily Count',
+    iqrColor: COLORS.blueA.replace('.25', '.65'),
+    iqrBorderColor: COLORS.blue
   });
 }
 
-/* 6. Month-of-Year Bar Chart (last 5 years) */
+/* 6. Month-of-Year Boxplot (last 5 years) */
 function renderMoyChart(d) {
   const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  makeChart('chart-moy', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Avg Monthly Count',
-          data: d.moyAvg,
-          backgroundColor: COLORS.tealA.replace('.25', '.65'),
-          borderColor: COLORS.teal,
-          borderWidth: 1.5,
-          borderRadius: 3
-        },
-        {
-          label: 'Most Recent Monthly Volume',
-          data: d.moyRecent,
-          backgroundColor: COLORS.amberA.replace('.25', '.65'),
-          borderColor: COLORS.amber,
-          borderWidth: 1.5,
-          borderRadius: 3
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
-      },
-      scales: { x: xScale(12), y: yScale('Avg Monthly Count') }
-    }
+  renderBoxplotChart('chart-moy', labels, d.moyBox, {
+    maxLabels: 12,
+    yTitle: 'Monthly Count',
+    iqrColor: COLORS.tealA.replace('.25', '.65'),
+    iqrBorderColor: COLORS.teal
   });
 }
 
@@ -1126,40 +1134,51 @@ function renderWeeklyCumulativeComparisonTable(d) {
   });
 }
 
-/* Day-of-Week Table (last 365 days) */
+function fmtBoxValue(v) {
+  return v != null ? fmt(Math.round(v)) : '—';
+}
+
+/* Day-of-Week Boxplot Table (last 365 days) */
 function renderDowTable(d) {
   const tbody = document.getElementById('tbody-dow');
   if (!tbody) return;
   tbody.innerHTML = '';
   const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   labels.forEach((label, i) => {
+    const s = d.dowBox[i];
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${label}</td>
-      <td>${fmt(Math.round(d.dowAvg[i]))}</td>
-      <td>${d.dowRecent[i] != null ? fmt(d.dowRecent[i]) : '—'}</td>
+      <td>${fmtBoxValue(s.min)}</td>
+      <td>${fmtBoxValue(s.q1)}</td>
+      <td>${fmtBoxValue(s.med)}</td>
+      <td>${fmtBoxValue(s.q3)}</td>
+      <td>${fmtBoxValue(s.max)}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/* Day-of-Month Table (last 2 years) */
+/* Day-of-Month Boxplot Table (last 2 years) */
 function renderDomTable(d) {
   const tbody = document.getElementById('tbody-dom');
   if (!tbody) return;
   tbody.innerHTML = '';
-  d.domAvg.forEach((value, i) => {
+  d.domBox.forEach((s, i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${i + 1}</td>
-      <td>${value != null ? fmt(Math.round(value)) : '—'}</td>
-      <td>${d.domRecent[i] != null ? fmt(d.domRecent[i]) : '—'}</td>
+      <td>${fmtBoxValue(s.min)}</td>
+      <td>${fmtBoxValue(s.q1)}</td>
+      <td>${fmtBoxValue(s.med)}</td>
+      <td>${fmtBoxValue(s.q3)}</td>
+      <td>${fmtBoxValue(s.max)}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-/* Month-of-Year Table (last 5 years) */
+/* Month-of-Year Boxplot Table (last 5 years) */
 function renderMoyTable(d) {
   const tbody = document.getElementById('tbody-moy');
   if (!tbody) return;
@@ -1167,11 +1186,123 @@ function renderMoyTable(d) {
   const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   labels.forEach((label, i) => {
+    const s = d.moyBox[i];
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${label}</td>
-      <td>${fmt(Math.round(d.moyAvg[i]))}</td>
-      <td>${d.moyRecent[i] != null ? fmt(d.moyRecent[i]) : '—'}</td>
+      <td>${fmtBoxValue(s.min)}</td>
+      <td>${fmtBoxValue(s.q1)}</td>
+      <td>${fmtBoxValue(s.med)}</td>
+      <td>${fmtBoxValue(s.q3)}</td>
+      <td>${fmtBoxValue(s.max)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function heatmapColor(value, min, max) {
+  if (value == null) return 'rgba(154,179,216,.14)';
+  const denom = Math.max(1, max - min);
+  const t = Math.max(0, Math.min(1, (value - min) / denom));
+  const alpha = 0.2 + (0.75 * t);
+  return `rgba(76,142,247,${alpha.toFixed(3)})`;
+}
+
+/* Weekly calendar heatmap chart (last 5 years) */
+function renderWeeklyHeatmapChart(d) {
+  const points = [];
+  d.weeklyHeatmapYears.forEach((year, yi) => {
+    d.weeklyHeatmapWeekLabels.forEach((week, wi) => {
+      points.push({
+        x: week,
+        y: year,
+        value: d.weeklyHeatmapSeries[yi][wi]
+      });
+    });
+  });
+
+  makeChart('chart-weekly-heatmap', {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Weekly Reporting Count',
+        data: points,
+        pointStyle: 'rectRounded',
+        pointRadius: ctx => {
+          const area = ctx.chart.chartArea;
+          if (!area) return 4;
+          const w = area.width / Math.max(1, d.weeklyHeatmapWeekLabels.length);
+          const h = area.height / Math.max(1, d.weeklyHeatmapYears.length);
+          return Math.max(2, Math.min(9, Math.floor(Math.min(w, h) / 2) - 1));
+        },
+        pointHoverRadius: ctx => (typeof ctx.dataset.pointRadius === 'function'
+          ? Math.max(3, ctx.dataset.pointRadius(ctx) + 1)
+          : 5),
+        backgroundColor: ctx =>
+          heatmapColor(ctx.raw?.value, d.weeklyHeatmapMin, d.weeklyHeatmapMax),
+        borderColor: ctx =>
+          heatmapColor(ctx.raw?.value, d.weeklyHeatmapMin, d.weeklyHeatmapMax),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => `${ctx[0].raw.y} ${ctx[0].raw.x}`,
+            label: ctx => ` Weekly Count: ${ctx.raw.value != null ? fmt(ctx.raw.value) : '—'}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          labels: d.weeklyHeatmapWeekLabels,
+          grid: { display: false },
+          ticks: {
+            callback: (value, idx) => (idx % 4 === 0 ? d.weeklyHeatmapWeekLabels[idx] : ''),
+            color: document.documentElement.getAttribute('data-theme') === 'light' ? '#3a5a8a' : '#9ab3d8',
+            maxRotation: 0,
+            minRotation: 0
+          },
+          title: { display: true, text: 'Week of Year' }
+        },
+        y: {
+          type: 'category',
+          labels: d.weeklyHeatmapYears,
+          grid: { display: false },
+          ticks: {
+            color: document.documentElement.getAttribute('data-theme') === 'light' ? '#3a5a8a' : '#9ab3d8'
+          },
+          title: { display: true, text: 'Year' }
+        }
+      }
+    }
+  });
+}
+
+/* Weekly calendar heatmap table (last 5 years) */
+function renderWeeklyHeatmapTable(d) {
+  d.weeklyHeatmapYears.forEach((y, i) => {
+    const th = document.getElementById(`th-weekly-heatmap-y${i}`);
+    if (th) th.textContent = y;
+  });
+
+  const tbody = document.getElementById('tbody-weekly-heatmap');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  d.weeklyHeatmapWeekLabels.forEach((week, wi) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${week}</td>
+      <td>${d.weeklyHeatmapSeries[0][wi] != null ? fmt(d.weeklyHeatmapSeries[0][wi]) : '—'}</td>
+      <td>${d.weeklyHeatmapSeries[1][wi] != null ? fmt(d.weeklyHeatmapSeries[1][wi]) : '—'}</td>
+      <td>${d.weeklyHeatmapSeries[2][wi] != null ? fmt(d.weeklyHeatmapSeries[2][wi]) : '—'}</td>
+      <td>${d.weeklyHeatmapSeries[3][wi] != null ? fmt(d.weeklyHeatmapSeries[3][wi]) : '—'}</td>
+      <td>${d.weeklyHeatmapSeries[4][wi] != null ? fmt(d.weeklyHeatmapSeries[4][wi]) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1307,6 +1438,7 @@ function toggleTheme() {
     renderWeeklyChart(window._dashData);
     renderWeeklyCumulativeComparisonChart(window._dashData);
     renderMonthlyChart(window._dashData);
+    renderWeeklyHeatmapChart(window._dashData);
     renderPieChart(window._dashData);
   }
 }
@@ -1356,6 +1488,8 @@ async function init() {
     renderWeeklyCumulativeComparisonTable(data);
     renderMonthlyChart(data);
     renderMonthlyTable(data);
+    renderWeeklyHeatmapChart(data);
+    renderWeeklyHeatmapTable(data);
     renderPieChart(data);
     renderPieTable(data);
     renderLast5YearSummary(data);

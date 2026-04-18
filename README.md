@@ -87,7 +87,7 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 1 | **Total Reporting Counts** | Total all-time, this year, this month |
 | 2 | **Daily Reporting Stats** | Avg / Max / Min / Median for all time, last 12 months, last 30 days |
 | 3 | **Reporting Growth Metrics** | % change — last 12 mo vs previous 12 mo; last 30 days vs previous 30 days |
-| 4 | **Day of Week Avg (last 365 d)** | Bar chart — average count per weekday (Mon–Sun) |
+| 4 | **Day of Week Boxplot — Last 365 Days** | Boxplot by weekday (Mon–Sun) using min/Q1/median/Q3/max daily counts |
 | 5 | **Cumulative Yearly Chart** | Bar = running total by year; dashed line = linear-regression forecast for current year + next 2 |
 | 6 | **Annual Reporting Volume** | Bar = yearly totals; dashed line = linear-regression forecast |
 | 7 | **Cumulative Yearly Table** | Tabular data matching panel 5 |
@@ -99,9 +99,11 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 13 | **Weekly Cumulative Reporting Comparison — Last 4 Years** | Cumulative line chart by week-of-year for current and previous 3 calendar years |
 | 14 | **Weekly Cumulative Reporting Comparison — Last 4 Years — Table** | Tabular cumulative weekly values for the same 4 years |
 | 15 | **Yearly Share Pie Chart** | Pie chart of total count per year |
-| 16 | **Day of Week Avg Count — Last 365 Days — Table** | Tabular weekday averages matching the day-of-week chart |
-| 17 | **Day of Month Avg Count — Last 2 Years — Table** | Tabular day-of-month averages matching the day-of-month chart |
-| 18 | **Month of Year Avg Count — Last 5 Years — Table** | Tabular month-of-year averages matching the month-of-year chart |
+| 16 | **Day of Week Boxplot — Last 365 Days — Table** | Tabular weekday min/Q1/median/Q3/max values matching the day-of-week boxplot |
+| 17 | **Day of Month Boxplot — Last 2 Years — Table** | Tabular day-of-month min/Q1/median/Q3/max values matching the day-of-month boxplot |
+| 18 | **Month of Year Boxplot — Last 5 Years — Table** | Tabular month-of-year min/Q1/median/Q3/max values matching the month-of-year boxplot |
+| 19 | **Weekly Calendar Heatmap — Last 5 Years** | Weekly heatmap grid with week-of-year on x-axis and year on y-axis |
+| 20 | **Weekly Reporting Count by Year — Last 5 Years — Table** | Tabular weekly counts with one column per year for the last 5 calendar years |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next
