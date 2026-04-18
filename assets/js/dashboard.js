@@ -85,7 +85,7 @@ function arrQuantileSorted(sorted, q) {
   const pos = (sorted.length - 1) * q;
   const base = Math.floor(pos);
   const rest = pos - base;
-  if (sorted[base + 1] != null) {
+  if (sorted[base + 1] !== undefined) {
     return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
   }
   return sorted[base];
@@ -1135,7 +1135,7 @@ function renderWeeklyCumulativeComparisonTable(d) {
 }
 
 function fmtBoxValue(v) {
-  return v != null ? fmt(Math.round(v)) : '—';
+  return v !== null && v !== undefined ? fmt(Math.round(v)) : '—';
 }
 
 /* Day-of-Week Boxplot Table (last 365 days) */
