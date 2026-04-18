@@ -18,7 +18,8 @@ const CONFIG = {
   FORECAST_EXTRA_YEARS: 4,   // forecast years beyond current year
   WEEKLY_FORECAST: 3,        // weeks to forecast
   MONTHLY_FORECAST: 3,       // months to forecast
-  DAILY60_FORECAST: 5        // days to forecast on 60-day chart
+  DAILY60_FORECAST: 5,       // days to forecast on 60-day chart
+  HEATMAP_TICK_INTERVAL: 4   // show every Nth week label on heatmap x-axis
 };
 
 // ── Chart defaults ─────────────────────────────────────────
@@ -1262,7 +1263,8 @@ function renderWeeklyHeatmapChart(d) {
           labels: d.weeklyHeatmapWeekLabels,
           grid: { display: false },
           ticks: {
-            callback: (value, idx) => (idx % 4 === 0 ? d.weeklyHeatmapWeekLabels[idx] : ''),
+            callback: (value, idx) =>
+              (idx % CONFIG.HEATMAP_TICK_INTERVAL === 0 ? d.weeklyHeatmapWeekLabels[idx] : ''),
             color: document.documentElement.getAttribute('data-theme') === 'light' ? '#3a5a8a' : '#9ab3d8',
             maxRotation: 0,
             minRotation: 0
