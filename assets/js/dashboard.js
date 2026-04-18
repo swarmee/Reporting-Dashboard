@@ -1298,14 +1298,11 @@ function renderWeeklyHeatmapTable(d) {
 
   d.weeklyHeatmapWeekLabels.forEach((week, wi) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${week}</td>
-      <td>${d.weeklyHeatmapSeries[0][wi] != null ? fmt(d.weeklyHeatmapSeries[0][wi]) : '—'}</td>
-      <td>${d.weeklyHeatmapSeries[1][wi] != null ? fmt(d.weeklyHeatmapSeries[1][wi]) : '—'}</td>
-      <td>${d.weeklyHeatmapSeries[2][wi] != null ? fmt(d.weeklyHeatmapSeries[2][wi]) : '—'}</td>
-      <td>${d.weeklyHeatmapSeries[3][wi] != null ? fmt(d.weeklyHeatmapSeries[3][wi]) : '—'}</td>
-      <td>${d.weeklyHeatmapSeries[4][wi] != null ? fmt(d.weeklyHeatmapSeries[4][wi]) : '—'}</td>
-    `;
+    const yearCells = d.weeklyHeatmapYears.map((_, yi) => {
+      const v = d.weeklyHeatmapSeries[yi]?.[wi];
+      return `<td>${v != null ? fmt(v) : '—'}</td>`;
+    }).join('');
+    tr.innerHTML = `<td>${week}</td>${yearCells}`;
     tbody.appendChild(tr);
   });
 }
