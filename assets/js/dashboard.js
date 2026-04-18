@@ -1264,7 +1264,7 @@ function renderWeeklyHeatmapChart(d) {
           grid: { display: false },
           ticks: {
             callback: (value, idx) =>
-              (idx % CONFIG.HEATMAP_TICK_INTERVAL === 0 ? d.weeklyHeatmapWeekLabels[idx] : ''),
+              idx % CONFIG.HEATMAP_TICK_INTERVAL === 0 ? d.weeklyHeatmapWeekLabels[idx] : '',
             color: document.documentElement.getAttribute('data-theme') === 'light' ? '#3a5a8a' : '#9ab3d8',
             maxRotation: 0,
             minRotation: 0
