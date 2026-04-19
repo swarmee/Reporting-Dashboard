@@ -810,7 +810,6 @@ function resizePlotlyCharts(forceRelayoutOrOptions = false, lockToContainerArg =
             el.style.maxWidth = '100%';
             el.style.height = '100%';
             window.Plotly.relayout(el, { width, height, autosize: false });
-            window.Plotly.Plots.resize(el);
           }
         }
       }
