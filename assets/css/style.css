@@ -628,7 +628,13 @@ body {
 
   .panel-body { min-width: 0; }
 
-  .chart-container { min-height: 200px; width: 100%; max-width: 100%; }
+  .chart-container {
+    min-height: 200px;
+    height: 240px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
 
   .plotly-chart,
   .plotly-chart > div,
@@ -637,6 +643,7 @@ body {
   .plotly-chart .svg-container {
     width: 100% !important;
     max-width: 100% !important;
+    height: 100% !important;
   }
 
   .data-table-wrapper { overflow: hidden !important; }
