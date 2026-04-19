@@ -474,11 +474,11 @@
 
   <!-- Bottom Row: Periodicity Charts -->
 
-  <!-- Panel – Day-of-Week Average (last 365 days) -->
+  <!-- Panel – Day-of-Week Distribution (last 365 days) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📅</span>
-      <h2 class="panel-title">Day of Week Distribution (Boxplot) — Last 365 Days</h2>
+      <h2 class="panel-title">Day of Week Distribution — Last 365 Days</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
@@ -488,11 +488,11 @@
     </div>
   </section>
 
-  <!-- Panel – Day-of-Week Average Table (last 365 days) -->
+  <!-- Panel – Day-of-Week Distribution Stats Table (last 365 days) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
-      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days — Table</h2>
+      <h2 class="panel-title">Day of Week Distribution Stats — Last 365 Days</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -502,7 +502,8 @@
             <tr>
               <th>Day of Week</th>
               <th>Avg Daily Count</th>
-              <th>Most Recent Daily Volume</th>
+              <th>Min Daily Count</th>
+              <th>Max Daily Count</th>
             </tr>
           </thead>
           <tbody id="tbody-dow"></tbody>
@@ -511,11 +512,11 @@
     </div>
   </section>
 
-  <!-- Panel – Day of Month Average Count (last 2 years) -->
+  <!-- Panel – Day of Month Distribution (last 2 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗓️</span>
-      <h2 class="panel-title">Day of Month Distribution (Boxplot) — Last 2 Years</h2>
+      <h2 class="panel-title">Day of Month Distribution — Last 2 Years</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
@@ -525,11 +526,11 @@
     </div>
   </section>
 
-  <!-- Panel – Day-of-Month Average Table (last 2 years) -->
+  <!-- Panel – Day-of-Month Distribution Stats Table (last 2 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
-      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years — Table</h2>
+      <h2 class="panel-title">Day of Month Distribution Stats — Last 2 Years — Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -539,7 +540,8 @@
             <tr>
               <th>Day of Month</th>
               <th>Avg Daily Count</th>
-              <th>Most Recent Daily Volume</th>
+              <th>Min Daily Count</th>
+              <th>Max Daily Count</th>
             </tr>
           </thead>
           <tbody id="tbody-dom"></tbody>
@@ -562,11 +564,11 @@
     </div>
   </section>
 
-  <!-- Panel – Month-of-Year Average Table (last 5 years) -->
+  <!-- Panel – Month/Year Reporting Table (last 5 years) -->
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗂️</span>
-      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years — Table</h2>
+      <h2 class="panel-title">Month/Year Reporting — Last 5 Years — Table</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body" style="padding:0">
@@ -574,12 +576,55 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Month of Year</th>
-              <th>Avg Monthly Count</th>
-              <th>Most Recent Monthly Volume</th>
+              <th>Year</th>
+              <th>Jan</th>
+              <th>Feb</th>
+              <th>Mar</th>
+              <th>Apr</th>
+              <th>May</th>
+              <th>Jun</th>
+              <th>Jul</th>
+              <th>Aug</th>
+              <th>Sep</th>
+              <th>Oct</th>
+              <th>Nov</th>
+              <th>Dec</th>
             </tr>
           </thead>
           <tbody id="tbody-moy"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Row: Week/Year Heatmap -->
+
+  <!-- Panel – Week/Year heatmap (last 5 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗓️</span>
+      <h2 class="panel-title">Week/Year Reporting Heatmap — Last 5 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <div id="chart-week-year" class="plotly-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel – Week/Year table (last 5 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Week/Year Reporting — Last 5 Years — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead id="thead-week-year"></thead>
+          <tbody id="tbody-week-year"></tbody>
         </table>
       </div>
     </div>
