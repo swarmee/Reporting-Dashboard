@@ -766,20 +766,21 @@ function resizePlotlyCharts(forceRelayout = false, lockToContainer = false) {
     const el = document.getElementById(id);
     if (!el) return;
     try {
-      if (forceRelayout && !lockToContainer) {
-        window.Plotly.relayout(el, { autosize: true, width: null, height: null });
-      }
-      window.Plotly.Plots.resize(el);
-      if (forceRelayout && lockToContainer) {
-        const container = el.closest('.chart-container');
-        if (container) {
-          const width = Math.max(0, Math.floor(container.clientWidth));
-          const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
-          if (width > 0 && height > 0) {
-            window.Plotly.relayout(el, { width, height, autosize: false });
+      if (forceRelayout) {
+        if (lockToContainer) {
+          const container = el.closest('.chart-container');
+          if (container) {
+            const width = Math.max(0, Math.floor(container.clientWidth));
+            const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
+            if (width > 0 && height > 0) {
+              window.Plotly.relayout(el, { width, height, autosize: false });
+            }
           }
+        } else {
+          window.Plotly.relayout(el, { autosize: true, width: null, height: null });
         }
       }
+      window.Plotly.Plots.resize(el);
     } catch (e) { /* ignore */ }
   });
 }
