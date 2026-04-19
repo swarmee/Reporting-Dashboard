@@ -478,12 +478,12 @@
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📅</span>
-      <h2 class="panel-title">Day of Week Avg Count — Last 365 Days</h2>
+      <h2 class="panel-title">Day of Week Distribution (Boxplot) — Last 365 Days</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
-        <canvas id="chart-dow"></canvas>
+        <div id="chart-dow" class="plotly-chart"></div>
       </div>
     </div>
   </section>
@@ -515,12 +515,12 @@
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">🗓️</span>
-      <h2 class="panel-title">Day of Month Avg Count — Last 2 Years</h2>
+      <h2 class="panel-title">Day of Month Distribution (Boxplot) — Last 2 Years</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
-        <canvas id="chart-dom"></canvas>
+        <div id="chart-dom" class="plotly-chart"></div>
       </div>
     </div>
   </section>
@@ -552,12 +552,12 @@
   <section class="panel">
     <div class="panel-header">
       <span class="panel-icon">📆</span>
-      <h2 class="panel-title">Month of Year Avg Count — Last 5 Years</h2>
+      <h2 class="panel-title">Month/Year Reporting Heatmap — Last 5 Years</h2>
       <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
     </div>
     <div class="panel-body">
       <div class="chart-container">
-        <canvas id="chart-moy"></canvas>
+        <div id="chart-moy" class="plotly-chart"></div>
       </div>
     </div>
   </section>
@@ -594,6 +594,7 @@
 
 <!-- ── Scripts ───────────────────────────────────────────── -->
 <script src="assets/js/chart.umd.min.js"></script>
+<script src="assets/js/plotly-2.35.2.min.js"></script>
 <script src="assets/js/dashboard.js"></script>
 
 </body>

@@ -40,6 +40,9 @@ const COLORS = {
   tealA:  'rgba(26,191,191,.25)',
   amberA: 'rgba(245,166,35,.25)'
 };
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function pieColors(n) {
   return Array.from({ length: n }, (_, i) =>
@@ -162,13 +165,17 @@ function onFullscreenChange() {
       Object.values(chartInstances).forEach(chart => {
         try { chart.resize(); } catch (e) { /* ignore */ }
       });
+      resizePlotlyCharts();
       snapDataTableWrapperHeights();
     }, 150);
   }
 }
 document.addEventListener('fullscreenchange', onFullscreenChange);
 document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-window.addEventListener('resize', snapDataTableWrapperHeights);
+window.addEventListener('resize', () => {
+  resizePlotlyCharts();
+  snapDataTableWrapperHeights();
+});
 
 // ── Data processing ───────────────────────────────────────
 function processData(raw) {
@@ -522,6 +529,14 @@ function processData(raw) {
     pieDisplayTotals.push(pieOtherTotal);
   }
 
+  const heatmapYears = Array.from({ length: 5 }, (_, i) => String(currentYear - 4 + i));
+  const moyHeatmap = heatmapYears.map(y => (
+    Array.from({ length: 12 }, (_, monthIdx) => {
+      const key = `${y}-${String(monthIdx + 1).padStart(2, '0')}`;
+      return moyMonthlyMap[key] ?? null;
+    })
+  ));
+
   return {
     // totals
     totalAll, totalThisYear, totalThisMon,
@@ -532,10 +547,11 @@ function processData(raw) {
     sum30,  sumPrev30,  growth30,
     sum7,   sumPrev7,   growth7,
     // dow
-    dowAvg, dowRecent,
+    dowAvg, dowRecent, dowBuckets,
     // dom / moy
-    domAvg, domRecent,
+    domAvg, domRecent, domBuckets,
     moyAvg, moyRecent,
+    heatmapYears, moyHeatmap,
     // yearly
     years, yTotals, yCumulative,
     allYearLabels, barNonCum, barCum,
@@ -569,6 +585,7 @@ function processData(raw) {
 
 // ── Chart factory helpers ─────────────────────────────────
 const chartInstances = {};
+const plotlyChartIds = ['chart-dow', 'chart-dom', 'chart-moy'];
 
 function destroyChart(id) {
   if (chartInstances[id]) {
@@ -611,6 +628,15 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
       autoSkip: true
     }
   };
+}
+
+function resizePlotlyCharts() {
+  if (!window.Plotly) return;
+  plotlyChartIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    try { window.Plotly.Plots.resize(el); } catch (e) { /* ignore */ }
+  });
 }
 
 // ── Panel renderers ───────────────────────────────────────
@@ -657,116 +683,126 @@ function renderGrowth(d) {
 
 /* 4. Day-of-Week Bar Chart */
 function renderDowChart(d) {
-  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  makeChart('chart-dow', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Avg Daily Count',
-          data: d.dowAvg,
-          backgroundColor: labels.map((_, i) =>
-            i < 5 ? COLORS.blueA.replace('.25', '.7') : COLORS.tealA.replace('.25', '.7')
-          ),
-          borderColor: labels.map((_, i) => i < 5 ? COLORS.blue : COLORS.teal),
-          borderWidth: 1.5,
-          borderRadius: 4
-        },
-        {
-          label: 'Most Recent Daily Volume',
-          data: d.dowRecent,
-          backgroundColor: COLORS.amberA.replace('.25', '.7'),
-          borderColor: COLORS.amber,
-          borderWidth: 1.5,
-          borderRadius: 4
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
-      },
-      scales: { x: xScale(7), y: yScale() }
-    }
+  if (!window.Plotly) return;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const x = [];
+  const y = [];
+  d.dowBuckets.forEach((bucket, i) => {
+    bucket.forEach(v => {
+      x.push(WEEKDAY_LABELS[i]);
+      y.push(v);
+    });
   });
+  window.Plotly.react('chart-dow', [{
+    type: 'box',
+    x,
+    y,
+    boxpoints: 'suspectedoutliers',
+    jitter: 0.3,
+    whiskerwidth: 0.7,
+    marker: { color: COLORS.amber, size: 3, opacity: 0.5 },
+    line: { color: COLORS.blue, width: 2 },
+    fillcolor: isLight ? 'rgba(76,142,247,.30)' : 'rgba(76,142,247,.45)',
+    hovertemplate: '%{x}<br>%{y:,}<extra></extra>'
+  }], {
+    margin: { l: 50, r: 10, t: 8, b: 40 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    xaxis: {
+      type: 'category',
+      categoryorder: 'array',
+      categoryarray: WEEKDAY_LABELS,
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    },
+    yaxis: {
+      tickformat: '~s',
+      gridcolor: isLight ? 'rgba(150,180,220,.4)' : 'rgba(44,74,138,.35)',
+      zeroline: false,
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    }
+  }, { responsive: true, displayModeBar: false });
 }
 
 /* 5. Day-of-Month Bar Chart (last 2 years) */
 function renderDomChart(d) {
-  const labels = Array.from({ length: 31 }, (_, i) => String(i + 1));
-  makeChart('chart-dom', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Avg Daily Count',
-          data: d.domAvg,
-          backgroundColor: COLORS.blueA.replace('.25', '.65'),
-          borderColor: COLORS.blue,
-          borderWidth: 1.5,
-          borderRadius: 3
-        },
-        {
-          label: 'Most Recent Daily Volume',
-          data: d.domRecent,
-          backgroundColor: COLORS.amberA.replace('.25', '.65'),
-          borderColor: COLORS.amber,
-          borderWidth: 1.5,
-          borderRadius: 3
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
-      },
-      scales: { x: xScale(31), y: yScale('Avg Daily Count') }
-    }
+  if (!window.Plotly) return;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const x = [];
+  const y = [];
+  d.domBuckets.forEach((bucket, i) => {
+    bucket.forEach(v => {
+      x.push(String(i + 1));
+      y.push(v);
+    });
   });
+  window.Plotly.react('chart-dom', [{
+    type: 'box',
+    x,
+    y,
+    boxpoints: false,
+    whiskerwidth: 0.6,
+    line: { color: COLORS.teal, width: 1.5 },
+    fillcolor: isLight ? 'rgba(26,191,191,.25)' : 'rgba(26,191,191,.4)',
+    hovertemplate: 'Day %{x}<br>%{y:,}<extra></extra>'
+  }], {
+    margin: { l: 50, r: 10, t: 8, b: 40 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    xaxis: {
+      type: 'category',
+      tickmode: 'array',
+      tickvals: ['1', '5', '10', '15', '20', '25', '31'],
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    },
+    yaxis: {
+      tickformat: '~s',
+      gridcolor: isLight ? 'rgba(150,180,220,.4)' : 'rgba(44,74,138,.35)',
+      zeroline: false,
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    }
+  }, { responsive: true, displayModeBar: false });
 }
 
 /* 6. Month-of-Year Bar Chart (last 5 years) */
 function renderMoyChart(d) {
-  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  makeChart('chart-moy', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Avg Monthly Count',
-          data: d.moyAvg,
-          backgroundColor: COLORS.tealA.replace('.25', '.65'),
-          borderColor: COLORS.teal,
-          borderWidth: 1.5,
-          borderRadius: 3
-        },
-        {
-          label: 'Most Recent Monthly Volume',
-          data: d.moyRecent,
-          backgroundColor: COLORS.amberA.replace('.25', '.65'),
-          borderColor: COLORS.amber,
-          borderWidth: 1.5,
-          borderRadius: 3
-        }
-      ]
+  if (!window.Plotly) return;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  window.Plotly.react('chart-moy', [{
+    type: 'heatmap',
+    x: MONTH_LABELS,
+    y: d.heatmapYears,
+    z: d.moyHeatmap,
+    colorscale: [
+      [0, '#1f3b77'],
+      [0.35, '#2f7ed8'],
+      [0.6, '#36b1bf'],
+      [0.8, '#f5a623'],
+      [1, '#d64545']
+    ],
+    xgap: 2,
+    ygap: 2,
+    colorbar: {
+      title: 'Count',
+      tickformat: '~s',
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' },
+      titlefont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { boxWidth: 12 } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtCompact(ctx.parsed.y)}` } }
-      },
-      scales: { x: xScale(12), y: yScale('Avg Monthly Count') }
+    hovertemplate: '%{y} %{x}<br>%{z:,}<extra></extra>'
+  }], {
+    margin: { l: 60, r: 30, t: 8, b: 35 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    xaxis: {
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    },
+    yaxis: {
+      autorange: 'reversed',
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
     }
-  });
+  }, { responsive: true, displayModeBar: false });
 }
 
 /* 7. Cumulative Yearly Chart */
