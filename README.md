@@ -31,6 +31,7 @@ Reporting-Dashboard/
 │   │   └── style.css           # Theme variables (light default, dark toggle) + print media query
 │   └── js/
 │       ├── chart.umd.min.js    # Chart.js v4.5.1 (bundled, no CDN needed)
+│       ├── plotly-cartesian-2.35.2.min.js # Plotly.js cartesian bundle (boxplot + heatmap)
 │       └── dashboard.js        # All data-fetching, processing & chart logic
 ├── serve.py                    # Local dev server — serves static files AND
 │                               #   a synthetic mock of the reporting API
@@ -44,8 +45,9 @@ Reporting-Dashboard/
 |------|---------|
 | `index.html` | Defines the two-column grid layout, all panel skeletons, and links to assets. |
 | `assets/css/style.css` | CSS custom-properties theme (light by default, dark via toggle). `@media print` block preserves dashboard colours in PDF output via `print-color-adjust: exact`. |
-| `assets/js/dashboard.js` | Fetches data from the API, performs all calculations (totals, stats, regressions, moving averages), and renders every Chart.js chart and data table. |
+| `assets/js/dashboard.js` | Fetches data from the API, performs all calculations (totals, stats, regressions, moving averages), and renders all dashboard charts/tables (Chart.js + Plotly). |
 | `assets/js/chart.umd.min.js` | Chart.js v4.5.1 UMD bundle — **no internet required**. |
+| `assets/js/plotly-cartesian-2.35.2.min.js` | Plotly.js v2.35.2 cartesian bundle for professional boxplot and heatmap visualisations — **no internet required**. |
 | `serve.py` | Python 3 HTTP server.  Serves static files via `http.server.SimpleHTTPRequestHandler` and intercepts `GET /v1/reporting` to return synthetic historical data (1970–today, ~2.5 B total). |
 
 ---
@@ -99,9 +101,9 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 13 | **Weekly Cumulative Reporting Comparison — Last 4 Years** | Cumulative line chart by week-of-year for current and previous 3 calendar years |
 | 14 | **Weekly Cumulative Reporting Comparison — Last 4 Years — Table** | Tabular cumulative weekly values for the same 4 years |
 | 15 | **Yearly Share Pie Chart** | Pie chart of total count per year |
-| 16 | **Day of Week Avg Count — Last 365 Days — Table** | Tabular weekday averages matching the day-of-week chart |
-| 17 | **Day of Month Avg Count — Last 2 Years — Table** | Tabular day-of-month averages matching the day-of-month chart |
-| 18 | **Month of Year Avg Count — Last 5 Years — Table** | Tabular month-of-year averages matching the month-of-year chart |
+| 16 | **Day of Week Avg Count — Last 365 Days — Table** | Tabular weekday averages matching the day-of-week boxplot |
+| 17 | **Day of Month Avg Count — Last 2 Years — Table** | Tabular day-of-month averages matching the day-of-month boxplot |
+| 18 | **Month of Year Avg Count — Last 5 Years — Table** | Tabular month-of-year averages matching the month/year heatmap |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next
