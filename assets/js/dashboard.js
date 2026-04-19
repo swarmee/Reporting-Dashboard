@@ -234,16 +234,40 @@ function syncLayoutForPrint() {
   Object.values(chartInstances).forEach(chart => {
     try { chart.resize(); } catch (e) { /* ignore */ }
   });
-  resizePlotlyCharts(true);
+  resizePlotlyCharts(true, true);
   snapDataTableWrapperHeights();
 }
 window.addEventListener('beforeprint', () => {
   syncLayoutForPrint();
   setTimeout(syncLayoutForPrint, 100);
+  requestAnimationFrame(syncLayoutForPrint);
 });
 window.addEventListener('afterprint', () => {
-  setTimeout(syncLayoutForPrint, 100);
+  setTimeout(() => {
+    Object.values(chartInstances).forEach(chart => {
+      try { chart.resize(); } catch (e) { /* ignore */ }
+    });
+    resizePlotlyCharts(true, false);
+    snapDataTableWrapperHeights();
+  }, 100);
 });
+
+if (window.matchMedia) {
+  const printMedia = window.matchMedia('print');
+  if (printMedia?.addEventListener) {
+    printMedia.addEventListener('change', e => {
+      if (e.matches) {
+        syncLayoutForPrint();
+        setTimeout(syncLayoutForPrint, 120);
+      } else {
+        setTimeout(() => {
+          resizePlotlyCharts(true, false);
+          snapDataTableWrapperHeights();
+        }, 120);
+      }
+    });
+  }
+}
 
 window.addEventListener('resize', () => {
   resizePlotlyCharts(false);
@@ -736,18 +760,22 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
   };
 }
 
-function resizePlotlyCharts(forceRelayout = false) {
+function resizePlotlyCharts(forceRelayout = false, lockToContainer = false) {
   if (!window.Plotly) return;
   plotlyChartIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     try {
+      if (forceRelayout && !lockToContainer) {
+        window.Plotly.relayout(el, { autosize: true, width: null, height: null });
+      }
       window.Plotly.Plots.resize(el);
-      if (forceRelayout) {
+      if (forceRelayout && lockToContainer) {
         const container = el.closest('.chart-container');
         if (container) {
-          const width = Math.max(0, Math.floor(container.clientWidth));
-          const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
+          const rect = container.getBoundingClientRect();
+          const width = Math.max(0, Math.floor(rect.width || container.clientWidth));
+          const height = Math.max(0, Math.floor(rect.height || container.clientHeight || el.clientHeight));
           if (width > 0 && height > 0) {
             window.Plotly.relayout(el, { width, height, autosize: false });
           }
