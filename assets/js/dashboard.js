@@ -238,19 +238,21 @@ function syncLayoutForPrint() {
   resizePlotlyCharts(true, true);
   snapDataTableWrapperHeights();
 }
+
+function restoreLayoutAfterPrint() {
+  Object.values(chartInstances).forEach(chart => {
+    try { chart.resize(); } catch (e) { /* ignore */ }
+  });
+  resizePlotlyCharts(true, false);
+  snapDataTableWrapperHeights();
+}
+
 window.addEventListener('beforeprint', () => {
   syncLayoutForPrint();
   setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
-  requestAnimationFrame(syncLayoutForPrint);
 });
 window.addEventListener('afterprint', () => {
-  setTimeout(() => {
-    Object.values(chartInstances).forEach(chart => {
-      try { chart.resize(); } catch (e) { /* ignore */ }
-    });
-    resizePlotlyCharts(true, false);
-    snapDataTableWrapperHeights();
-  }, PRINT_LAYOUT_SYNC_DELAY_MS);
+  setTimeout(restoreLayoutAfterPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
 });
 
 if (window.matchMedia) {
@@ -261,10 +263,7 @@ if (window.matchMedia) {
         syncLayoutForPrint();
         setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
       } else {
-        setTimeout(() => {
-          resizePlotlyCharts(true, false);
-          snapDataTableWrapperHeights();
-        }, PRINT_LAYOUT_SYNC_DELAY_MS);
+        setTimeout(restoreLayoutAfterPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
       }
     });
   }
@@ -774,9 +773,8 @@ function resizePlotlyCharts(forceRelayout = false, lockToContainer = false) {
       if (forceRelayout && lockToContainer) {
         const container = el.closest('.chart-container');
         if (container) {
-          const rect = container.getBoundingClientRect();
-          const width = Math.max(0, Math.floor(rect.width || container.clientWidth));
-          const height = Math.max(0, Math.floor(rect.height || container.clientHeight || el.clientHeight));
+          const width = Math.max(0, Math.floor(container.clientWidth));
+          const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
           if (width > 0 && height > 0) {
             window.Plotly.relayout(el, { width, height, autosize: false });
           }
