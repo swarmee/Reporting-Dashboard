@@ -235,7 +235,7 @@ function syncLayoutForPrint() {
   Object.values(chartInstances).forEach(chart => {
     try { chart.resize(); } catch (e) { /* ignore */ }
   });
-  resizePlotlyCharts(true, true);
+  resizePlotlyCharts({ forceRelayout: true, lockToContainer: true });
   snapDataTableWrapperHeights();
 }
 
@@ -243,7 +243,7 @@ function restoreLayoutAfterPrint() {
   Object.values(chartInstances).forEach(chart => {
     try { chart.resize(); } catch (e) { /* ignore */ }
   });
-  resizePlotlyCharts(true, false);
+  resizePlotlyCharts({ forceRelayout: true, lockToContainer: false });
   snapDataTableWrapperHeights();
 }
 
@@ -270,7 +270,7 @@ if (window.matchMedia) {
 }
 
 window.addEventListener('resize', () => {
-  resizePlotlyCharts(false);
+  resizePlotlyCharts();
   snapDataTableWrapperHeights();
 });
 
@@ -760,7 +760,7 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
   };
 }
 
-function resizePlotlyCharts(forceRelayout = false, lockToContainer = false) {
+function resizePlotlyCharts({ forceRelayout = false, lockToContainer = false } = {}) {
   if (!window.Plotly) return;
   plotlyChartIds.forEach(id => {
     const el = document.getElementById(id);
