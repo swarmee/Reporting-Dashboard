@@ -760,27 +760,34 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
   };
 }
 
-function resizePlotlyCharts({ forceRelayout = false, lockToContainer = false } = {}) {
+function resizePlotlyCharts(forceRelayoutOrOptions = false, lockToContainerArg = false) {
+  const options = typeof forceRelayoutOrOptions === 'object' && forceRelayoutOrOptions !== null
+    ? forceRelayoutOrOptions
+    : { forceRelayout: Boolean(forceRelayoutOrOptions), lockToContainer: lockToContainerArg };
+  const forceRelayout = Boolean(options.forceRelayout);
+  const lockToContainer = Boolean(options.lockToContainer);
+
   if (!window.Plotly) return;
   plotlyChartIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     try {
       if (forceRelayout) {
-        if (lockToContainer) {
-          const container = el.closest('.chart-container');
-          if (container) {
-            const width = Math.max(0, Math.floor(container.clientWidth));
-            const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
-            if (width > 0 && height > 0) {
-              window.Plotly.relayout(el, { width, height, autosize: false });
-            }
-          }
-        } else {
+        if (!lockToContainer) {
           window.Plotly.relayout(el, { autosize: true, width: null, height: null });
         }
       }
       window.Plotly.Plots.resize(el);
+      if (forceRelayout && lockToContainer) {
+        const container = el.closest('.chart-container');
+        if (container) {
+          const width = Math.max(0, Math.floor(container.clientWidth));
+          const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
+          if (width > 0 && height > 0) {
+            window.Plotly.relayout(el, { width, height, autosize: false });
+          }
+        }
+      }
     } catch (e) { /* ignore */ }
   });
 }
