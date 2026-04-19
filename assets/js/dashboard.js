@@ -100,6 +100,7 @@ const COLORS = {
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const PRINT_LAYOUT_SYNC_DELAY_MS = 100;
 
 function pieColors(n) {
   return Array.from({ length: n }, (_, i) =>
@@ -239,7 +240,7 @@ function syncLayoutForPrint() {
 }
 window.addEventListener('beforeprint', () => {
   syncLayoutForPrint();
-  setTimeout(syncLayoutForPrint, 100);
+  setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
   requestAnimationFrame(syncLayoutForPrint);
 });
 window.addEventListener('afterprint', () => {
@@ -249,7 +250,7 @@ window.addEventListener('afterprint', () => {
     });
     resizePlotlyCharts(true, false);
     snapDataTableWrapperHeights();
-  }, 100);
+  }, PRINT_LAYOUT_SYNC_DELAY_MS);
 });
 
 if (window.matchMedia) {
@@ -258,12 +259,12 @@ if (window.matchMedia) {
     printMedia.addEventListener('change', e => {
       if (e.matches) {
         syncLayoutForPrint();
-        setTimeout(syncLayoutForPrint, 120);
+        setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
       } else {
         setTimeout(() => {
           resizePlotlyCharts(true, false);
           snapDataTableWrapperHeights();
-        }, 120);
+        }, PRINT_LAYOUT_SYNC_DELAY_MS);
       }
     });
   }
