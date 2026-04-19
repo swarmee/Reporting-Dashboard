@@ -21,10 +21,67 @@ const CONFIG = {
   DAILY60_FORECAST: 5        // days to forecast on 60-day chart
 };
 
+// ── Theme helpers ──────────────────────────────────────────
+function getCurrentTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'dark';
+}
+
+function getChartThemeColors() {
+  const theme = getCurrentTheme();
+  if (theme === 'light') {
+    return {
+      text: '#3a5a8a',
+      border: '#c5d5ed',
+      title: '#3a5a8a',
+      grid: 'rgba(150,180,220,.4)',
+      dowFill: 'rgba(76,142,247,.30)',
+      domFill: 'rgba(26,191,191,.25)'
+    };
+  }
+  if (theme === 'ukraine') {
+    return {
+      text: '#1f4d96',
+      border: '#9ebeea',
+      title: '#1f4d96',
+      grid: 'rgba(126,168,223,.45)',
+      dowFill: 'rgba(0,87,183,.28)',
+      domFill: 'rgba(255,215,0,.25)'
+    };
+  }
+  return {
+    text: '#9ab3d8',
+    border: '#1c3464',
+    title: '#5a7aaa',
+    grid: 'rgba(44,74,138,.35)',
+    dowFill: 'rgba(76,142,247,.45)',
+    domFill: 'rgba(26,191,191,.4)'
+  };
+}
+
+function applyChartDefaultsForTheme() {
+  const colors = getChartThemeColors();
+  Chart.defaults.color = colors.text;
+  Chart.defaults.borderColor = colors.border;
+}
+
+function updateThemeToggleButton() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  const theme = getCurrentTheme();
+  if (theme === 'light') {
+    btn.textContent = '☀️';
+    btn.title = 'Theme: Light (click to cycle to Dark)';
+  } else if (theme === 'ukraine') {
+    btn.textContent = '🇺🇦';
+    btn.title = 'Theme: Ukraine (click to cycle to Light)';
+  } else {
+    btn.textContent = '🌙';
+    btn.title = 'Theme: Dark (click to cycle to Ukraine)';
+  }
+}
+
 // ── Chart defaults ─────────────────────────────────────────
-const isInitialLightTheme = document.documentElement.getAttribute('data-theme') === 'light';
-Chart.defaults.color = isInitialLightTheme ? '#3a5a8a' : '#9ab3d8';
-Chart.defaults.borderColor = isInitialLightTheme ? '#c5d5ed' : '#1c3464';
+applyChartDefaultsForTheme();
 Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 Chart.defaults.font.size = 11;
 
@@ -172,6 +229,22 @@ function onFullscreenChange() {
 }
 document.addEventListener('fullscreenchange', onFullscreenChange);
 document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+function syncLayoutForPrint() {
+  Object.values(chartInstances).forEach(chart => {
+    try { chart.resize(); } catch (e) { /* ignore */ }
+  });
+  resizePlotlyCharts();
+  snapDataTableWrapperHeights();
+}
+window.addEventListener('beforeprint', () => {
+  syncLayoutForPrint();
+  setTimeout(syncLayoutForPrint, 100);
+});
+window.addEventListener('afterprint', () => {
+  setTimeout(syncLayoutForPrint, 100);
+});
+
 window.addEventListener('resize', () => {
   resizePlotlyCharts();
   snapDataTableWrapperHeights();
@@ -635,29 +708,29 @@ function makeChart(canvasId, config) {
 }
 
 function yScale(title) {
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const colors = getChartThemeColors();
   return {
-    grid: { color: isLight ? 'rgba(150,180,220,.4)' : 'rgba(44,74,138,.35)' },
+    grid: { color: colors.grid },
     ticks: {
       callback: v => fmtCompact(v),
       maxTicksLimit: 6,
-      color: isLight ? '#3a5a8a' : '#9ab3d8'
+      color: colors.text
     },
     title: title
-      ? { display: true, text: title, color: isLight ? '#3a5a8a' : '#5a7aaa', font: { size: 10 } }
+      ? { display: true, text: title, color: colors.title, font: { size: 10 } }
       : undefined
   };
 }
 
 function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const colors = getChartThemeColors();
   return {
     grid: { display: false },
     ticks: {
       maxTicksLimit: maxLabels,
       maxRotation: 40,
       minRotation: 0,
-      color: isLight ? '#3a5a8a' : '#9ab3d8',
+      color: colors.text,
       autoSkip: true
     }
   };
@@ -717,7 +790,7 @@ function renderGrowth(d) {
 /* 4. Day-of-Week Bar Chart */
 function renderDowChart(d) {
   if (!window.Plotly) return;
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const colors = getChartThemeColors();
   const x = [];
   const y = [];
   d.dowBuckets.forEach((bucket, i) => {
@@ -735,24 +808,24 @@ function renderDowChart(d) {
     whiskerwidth: 0.7,
     marker: { color: COLORS.amber, size: 3, opacity: 0.5 },
     line: { color: COLORS.blue, width: 2 },
-    fillcolor: isLight ? 'rgba(76,142,247,.30)' : 'rgba(76,142,247,.45)',
+    fillcolor: colors.dowFill,
     hovertemplate: '%{x}<br>%{y:,}<extra></extra>'
   }], {
     margin: { l: 50, r: 10, t: 8, b: 40 },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
     xaxis: {
       type: 'category',
       categoryorder: 'array',
       categoryarray: WEEKDAY_LABELS,
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     },
     yaxis: {
       tickformat: '~s',
-      gridcolor: isLight ? 'rgba(150,180,220,.4)' : 'rgba(44,74,138,.35)',
+      gridcolor: colors.grid,
       zeroline: false,
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     }
   }, { responsive: true, displayModeBar: false });
 }
@@ -760,7 +833,7 @@ function renderDowChart(d) {
 /* 5. Day-of-Month Bar Chart (last 2 years) */
 function renderDomChart(d) {
   if (!window.Plotly) return;
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const colors = getChartThemeColors();
   const x = [];
   const y = [];
   d.domBuckets.forEach((bucket, i) => {
@@ -776,24 +849,24 @@ function renderDomChart(d) {
     boxpoints: false,
     whiskerwidth: 0.6,
     line: { color: COLORS.teal, width: 1.5 },
-    fillcolor: isLight ? 'rgba(26,191,191,.25)' : 'rgba(26,191,191,.4)',
+    fillcolor: colors.domFill,
     hovertemplate: 'Day %{x}<br>%{y:,}<extra></extra>'
   }], {
     margin: { l: 50, r: 10, t: 8, b: 40 },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
     xaxis: {
       type: 'category',
       tickmode: 'array',
       tickvals: ['1', '5', '10', '15', '20', '25', '31'],
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     },
     yaxis: {
       tickformat: '~s',
-      gridcolor: isLight ? 'rgba(150,180,220,.4)' : 'rgba(44,74,138,.35)',
+      gridcolor: colors.grid,
       zeroline: false,
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     }
   }, { responsive: true, displayModeBar: false });
 }
@@ -801,7 +874,7 @@ function renderDomChart(d) {
 /* 6. Month-of-Year Bar Chart (last 5 years) */
 function renderMoyChart(d) {
   if (!window.Plotly) return;
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const colors = getChartThemeColors();
   window.Plotly.react('chart-moy', [{
     type: 'heatmap',
     x: MONTH_LABELS,
@@ -819,21 +892,21 @@ function renderMoyChart(d) {
     colorbar: {
       title: 'Count',
       tickformat: '~s',
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' },
-      titlefont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text },
+      titlefont: { color: colors.text }
     },
     hovertemplate: '%{y} %{x}<br>%{z:,}<extra></extra>'
   }], {
     margin: { l: 60, r: 30, t: 8, b: 35 },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
     xaxis: {
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     },
     yaxis: {
       autorange: 'reversed',
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     }
   }, { responsive: true, displayModeBar: false });
 }
@@ -884,7 +957,7 @@ function renderCumulativeChart(d) {
 /* Week/Year Heatmap Chart (last 5 years) */
 function renderWeekYearHeatmapChart(d) {
   if (!window.Plotly) return;
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const colors = getChartThemeColors();
   window.Plotly.react('chart-week-year', [{
     type: 'heatmap',
     x: d.weekYearWeekLabels,
@@ -902,23 +975,23 @@ function renderWeekYearHeatmapChart(d) {
     colorbar: {
       title: 'Count',
       tickformat: '~s',
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' },
-      titlefont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text },
+      titlefont: { color: colors.text }
     },
     hovertemplate: '%{y} %{x}<br>%{z:,}<extra></extra>'
   }], {
     margin: { l: 60, r: 30, t: 8, b: 35 },
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
     xaxis: {
       tickmode: 'array',
       tickvals: d.weekYearWeekLabels.filter((_, i) => i % 4 === 0),
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     },
     yaxis: {
       autorange: 'reversed',
-      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+      tickfont: { color: colors.text }
     }
   }, { responsive: true, displayModeBar: false });
 }
@@ -1274,15 +1347,21 @@ function renderDomTable(d) {
 
 /* Month-of-Year Table (last 5 years) */
 function renderMoyTable(d) {
+  const thead = document.getElementById('thead-moy');
   const tbody = document.getElementById('tbody-moy');
-  if (!tbody) return;
+  if (!thead || !tbody) return;
+  thead.innerHTML = '';
+  const headerRow = document.createElement('tr');
+  headerRow.innerHTML = `<th>Month</th>${d.heatmapYears.map(y => `<th>${y}</th>`).join('')}`;
+  thead.appendChild(headerRow);
   tbody.innerHTML = '';
-  d.heatmapYears.forEach((year, i) => {
+  MONTH_LABELS.forEach((month, monthIdx) => {
     const tr = document.createElement('tr');
-    const monthCells = d.moyHeatmap[i]
+    const yearCells = d.heatmapYears
+      .map((_, yearIdx) => d.moyHeatmap[yearIdx][monthIdx])
       .map(v => `<td>${v != null ? fmt(v) : '—'}</td>`)
       .join('');
-    tr.innerHTML = `<td>${year}</td>${monthCells}`;
+    tr.innerHTML = `<td>${month}</td>${yearCells}`;
     tbody.appendChild(tr);
   });
 }
@@ -1295,16 +1374,17 @@ function renderWeekYearTable(d) {
 
   thead.innerHTML = '';
   const headerRow = document.createElement('tr');
-  headerRow.innerHTML = `<th>Year</th>${d.weekYearWeekLabels.map(w => `<th>${w}</th>`).join('')}`;
+  headerRow.innerHTML = `<th>Week</th>${d.weekYearHeatmapYears.map(y => `<th>${y}</th>`).join('')}`;
   thead.appendChild(headerRow);
 
   tbody.innerHTML = '';
-  d.weekYearHeatmapYears.forEach((year, i) => {
+  d.weekYearWeekLabels.forEach((week, weekIdx) => {
     const tr = document.createElement('tr');
-    const weekCells = d.weekYearHeatmap[i]
+    const yearCells = d.weekYearHeatmap
+      .map(yearValues => yearValues[weekIdx])
       .map(v => `<td>${v != null ? fmt(v) : '—'}</td>`)
       .join('');
-    tr.innerHTML = `<td>${year}</td>${weekCells}`;
+    tr.innerHTML = `<td>${week}</td>${yearCells}`;
     tbody.appendChild(tr);
   });
 }
@@ -1417,18 +1497,17 @@ function renderLast5YearSummary(d) {
 /* Theme toggle */
 function toggleTheme() {
   const html = document.documentElement;
-  const goLight = html.getAttribute('data-theme') !== 'light';
-  if (goLight) {
-    html.setAttribute('data-theme', 'light');
-    Chart.defaults.color       = '#3a5a8a';
-    Chart.defaults.borderColor = '#c5d5ed';
-  } else {
+  const cycle = ['light', 'dark', 'ukraine'];
+  const current = getCurrentTheme();
+  const idx = cycle.indexOf(current);
+  const nextTheme = cycle[(idx + 1 + cycle.length) % cycle.length];
+  if (nextTheme === 'dark') {
     html.removeAttribute('data-theme');
-    Chart.defaults.color       = '#9ab3d8';
-    Chart.defaults.borderColor = '#1c3464';
+  } else {
+    html.setAttribute('data-theme', nextTheme);
   }
-  const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = goLight ? '🌙' : '☀️';
+  applyChartDefaultsForTheme();
+  updateThemeToggleButton();
   if (window._dashData) {
     renderDowChart(window._dashData);
     renderDomChart(window._dashData);
@@ -1463,6 +1542,7 @@ async function fetchData() {
 
 async function init() {
   try {
+    updateThemeToggleButton();
     const raw  = await fetchData();
     const data = processData(raw);
     window._dashData = data;

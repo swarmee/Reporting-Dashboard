@@ -44,7 +44,7 @@ Reporting-Dashboard/
 | File | Purpose |
 |------|---------|
 | `index.html` | Defines the two-column grid layout, all panel skeletons, and links to assets. |
-| `assets/css/style.css` | CSS custom-properties theme (light by default, dark via toggle). `@media print` block preserves dashboard colours in PDF output via `print-color-adjust: exact`. |
+| `assets/css/style.css` | CSS custom-properties themes (light by default, plus dark and Ukraine via toggle). `@media print` block preserves dashboard colours in PDF output via `print-color-adjust: exact`. |
 | `assets/js/dashboard.js` | Fetches data from the API, performs all calculations (totals, stats, regressions, moving averages), and renders all dashboard charts/tables (Chart.js + Plotly). |
 | `assets/js/chart.umd.min.js` | Chart.js v4.5.1 UMD bundle — **no internet required**. |
 | `assets/js/plotly-cartesian-2.35.2.min.js` | Plotly.js v2.35.2 cartesian bundle for professional boxplot and heatmap visualisations — **no internet required**. |
