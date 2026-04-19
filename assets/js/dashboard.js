@@ -100,6 +100,7 @@ const COLORS = {
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const PRINT_LAYOUT_SYNC_DELAY_MS = 100;
 
 function pieColors(n) {
   return Array.from({ length: n }, (_, i) =>
@@ -234,19 +235,42 @@ function syncLayoutForPrint() {
   Object.values(chartInstances).forEach(chart => {
     try { chart.resize(); } catch (e) { /* ignore */ }
   });
-  resizePlotlyCharts(true);
+  resizePlotlyCharts({ forceRelayout: true, lockToContainer: true });
   snapDataTableWrapperHeights();
 }
+
+function restoreLayoutAfterPrint() {
+  Object.values(chartInstances).forEach(chart => {
+    try { chart.resize(); } catch (e) { /* ignore */ }
+  });
+  resizePlotlyCharts({ forceRelayout: true, lockToContainer: false });
+  snapDataTableWrapperHeights();
+}
+
 window.addEventListener('beforeprint', () => {
   syncLayoutForPrint();
-  setTimeout(syncLayoutForPrint, 100);
+  setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
 });
 window.addEventListener('afterprint', () => {
-  setTimeout(syncLayoutForPrint, 100);
+  setTimeout(restoreLayoutAfterPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
 });
 
+if (window.matchMedia) {
+  const printMedia = window.matchMedia('print');
+  if (printMedia?.addEventListener) {
+    printMedia.addEventListener('change', e => {
+      if (e.matches) {
+        syncLayoutForPrint();
+        setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
+      } else {
+        setTimeout(restoreLayoutAfterPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
+      }
+    });
+  }
+}
+
 window.addEventListener('resize', () => {
-  resizePlotlyCharts(false);
+  resizePlotlyCharts();
   snapDataTableWrapperHeights();
 });
 
@@ -736,14 +760,25 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
   };
 }
 
-function resizePlotlyCharts(forceRelayout = false) {
+function resizePlotlyCharts(forceRelayoutOrOptions = false, lockToContainerArg = false) {
+  const options = typeof forceRelayoutOrOptions === 'object' && forceRelayoutOrOptions !== null
+    ? forceRelayoutOrOptions
+    : { forceRelayout: Boolean(forceRelayoutOrOptions), lockToContainer: lockToContainerArg };
+  const forceRelayout = Boolean(options.forceRelayout);
+  const lockToContainer = Boolean(options.lockToContainer);
+
   if (!window.Plotly) return;
   plotlyChartIds.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     try {
-      window.Plotly.Plots.resize(el);
       if (forceRelayout) {
+        if (!lockToContainer) {
+          window.Plotly.relayout(el, { autosize: true, width: null, height: null });
+        }
+      }
+      window.Plotly.Plots.resize(el);
+      if (forceRelayout && lockToContainer) {
         const container = el.closest('.chart-container');
         if (container) {
           const width = Math.max(0, Math.floor(container.clientWidth));
