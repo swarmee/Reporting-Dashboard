@@ -87,7 +87,7 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | # | Panel | Contents |
 |---|-------|---------|
 | 1 | **Total Reporting Counts** | Total all-time, this year, this month |
-| 2 | **Daily Reporting Stats** | Avg / Max / Min / Median for all time, last 12 months, last 30 days |
+| 2 | **Daily Reporting Stats** | Avg / Max / Min / Median for all time, last 12 months, last month |
 | 3 | **Reporting Growth Metrics** | % change — last 12 mo vs previous 12 mo; last 30 days vs previous 30 days |
 | 4 | **Day of Week Distribution — Last 365 Days** | Boxplot distribution by weekday |
 | 5 | **Cumulative Yearly Chart** | Bar = running total by year; dashed line = linear-regression forecast for current year + next 2 |

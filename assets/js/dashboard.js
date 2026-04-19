@@ -143,10 +143,16 @@ function arrMedian(a) {
 
 function arrStats(a) {
   if (!a.length) return { avg: 0, max: 0, min: 0, med: 0 };
+  let min = a[0];
+  let max = a[0];
+  for (let i = 1; i < a.length; i++) {
+    if (a[i] < min) min = a[i];
+    if (a[i] > max) max = a[i];
+  }
   return {
     avg: arrMean(a),
-    max: Math.max(...a),
-    min: Math.min(...a),
+    max,
+    min,
     med: arrMedian(a)
   };
 }
@@ -315,7 +321,14 @@ function processData(raw) {
   // Daily stats
   const dailyAll   = arrStats(records.map(r => r.count));
   const daily365   = arrStats(last365.map(r => r.count));
-  const daily30    = arrStats(last30.map(r => r.count));
+
+  // Last Month: previous full calendar month
+  const lastMonthDate = new Date(currentYear, new Date().getMonth() - 1, 1);
+  const lmYear  = lastMonthDate.getFullYear();
+  const lmMonth = lastMonthDate.getMonth() + 1;
+  const lastMonthPrefix = `${lmYear}-${String(lmMonth).padStart(2, '0')}`;
+  const lastMonthRecords = records.filter(r => r.date.startsWith(lastMonthPrefix));
+  const dailyLastMonth = arrStats(lastMonthRecords.map(r => r.count));
 
   // Growth
   const sum365     = arrSum(last365.map(r => r.count));
@@ -670,7 +683,7 @@ function processData(raw) {
     // totals
     totalAll, totalThisYear, totalThisMon,
     // daily stats
-    dailyAll, daily365, daily30,
+    dailyAll, daily365, dailyLastMonth,
     // growth
     sum365, sumPrev365, growth365,
     sum30,  sumPrev30,  growth30,
@@ -809,7 +822,7 @@ function renderDailyStats(d) {
   const rows = [
     { id: 'row-all', s: d.dailyAll },
     { id: 'row-365', s: d.daily365 },
-    { id: 'row-30',  s: d.daily30  }
+    { id: 'row-lm',  s: d.dailyLastMonth }
   ];
   rows.forEach(({ id, s }) => {
     document.getElementById(`${id}-avg`).textContent = fmtCompact(s.avg);
