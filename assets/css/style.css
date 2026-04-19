@@ -626,7 +626,10 @@ body {
 
   .panel-full { grid-column: 1 / -1; break-inside: avoid; }
 
-  .panel-body { min-width: 0; }
+  .panel,
+  .panel-body,
+  .chart-container,
+  .plotly-chart { min-width: 0 !important; }
 
   .chart-container {
     min-height: 200px;

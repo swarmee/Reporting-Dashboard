@@ -787,6 +787,9 @@ function resizePlotlyCharts(forceRelayoutOrOptions = false, lockToContainerArg =
     try {
       if (forceRelayout) {
         if (!lockToContainer) {
+          el.style.width = '';
+          el.style.maxWidth = '';
+          el.style.height = '';
           window.Plotly.relayout(el, { autosize: true, width: null, height: null });
         }
       }
@@ -794,10 +797,20 @@ function resizePlotlyCharts(forceRelayoutOrOptions = false, lockToContainerArg =
       if (forceRelayout && lockToContainer) {
         const container = el.closest('.chart-container');
         if (container) {
-          const width = Math.max(0, Math.floor(container.clientWidth));
-          const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
+          const width = Math.max(
+            0,
+            Math.floor(container.getBoundingClientRect().width || container.clientWidth)
+          );
+          const height = Math.max(
+            0,
+            Math.floor(container.getBoundingClientRect().height || container.clientHeight || el.clientHeight)
+          );
           if (width > 0 && height > 0) {
+            el.style.width = '100%';
+            el.style.maxWidth = '100%';
+            el.style.height = '100%';
             window.Plotly.relayout(el, { width, height, autosize: false });
+            window.Plotly.Plots.resize(el);
           }
         }
       }
