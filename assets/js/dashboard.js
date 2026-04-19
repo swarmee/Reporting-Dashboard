@@ -240,6 +240,8 @@ function processData(raw) {
     dowBuckets[dow].push(r.count);
   });
   const dowAvg = dowBuckets.map(b => arrMean(b));
+  const dowMin = dowBuckets.map(b => b.length ? Math.min(...b) : null);
+  const dowMax = dowBuckets.map(b => b.length ? Math.max(...b) : null);
   const dowRecent = Array(7).fill(null);
   let dowRemaining = 7;
   for (let i = records.length - 1; i >= 0 && dowRemaining > 0; i--) {
@@ -257,6 +259,8 @@ function processData(raw) {
     domBuckets[day].push(r.count);
   });
   const domAvg = domBuckets.map(b => b.length ? arrMean(b) : null);
+  const domMin = domBuckets.map(b => b.length ? Math.min(...b) : null);
+  const domMax = domBuckets.map(b => b.length ? Math.max(...b) : null);
   const domRecent = Array(31).fill(null);
   let domRemaining = 31;
   for (let i = records.length - 1; i >= 0 && domRemaining > 0; i--) {
@@ -537,6 +541,34 @@ function processData(raw) {
     })
   ));
 
+  const weekYearHeatmapYears = Array.from({ length: 5 }, (_, i) => String(currentYear - 4 + i));
+  const maxWeekYearWeeks = Math.max(
+    ...weekYearHeatmapYears.map(y => weekOfYear(new Date(Number(y), 11, 31)))
+  );
+  const weekYearWeekLabels = Array.from(
+    { length: maxWeekYearWeeks },
+    (_, i) => `W${String(i + 1).padStart(2, '0')}`
+  );
+  const weekYearTotals = Object.fromEntries(
+    weekYearHeatmapYears.map(y => [y, Array(maxWeekYearWeeks).fill(null)])
+  );
+  weekYearHeatmapYears.forEach(y => {
+    const weeksInYear = weekOfYear(new Date(Number(y), 11, 31));
+    for (let i = 0; i < weeksInYear; i++) weekYearTotals[y][i] = 0;
+  });
+  records.forEach(r => {
+    const y = r.date.slice(0, 4);
+    if (!weekYearTotals[y]) return;
+    const w = weekOfYear(parseLocalDate(r.date)) - 1;
+    if (w >= 0 && w < maxWeekYearWeeks && weekYearTotals[y][w] != null) {
+      weekYearTotals[y][w] += r.count;
+    }
+  });
+  if (weekYearTotals[String(currentYear)]) {
+    for (let i = currentWeek; i < maxWeekYearWeeks; i++) weekYearTotals[String(currentYear)][i] = null;
+  }
+  const weekYearHeatmap = weekYearHeatmapYears.map(y => weekYearTotals[y]);
+
   return {
     // totals
     totalAll, totalThisYear, totalThisMon,
@@ -547,11 +579,12 @@ function processData(raw) {
     sum30,  sumPrev30,  growth30,
     sum7,   sumPrev7,   growth7,
     // dow
-    dowAvg, dowRecent, dowBuckets,
+    dowAvg, dowMin, dowMax, dowRecent, dowBuckets,
     // dom / moy
-    domAvg, domRecent, domBuckets,
+    domAvg, domMin, domMax, domRecent, domBuckets,
     moyAvg, moyRecent,
     heatmapYears, moyHeatmap,
+    weekYearHeatmapYears, weekYearWeekLabels, weekYearHeatmap,
     // yearly
     years, yTotals, yCumulative,
     allYearLabels, barNonCum, barCum,
@@ -585,7 +618,7 @@ function processData(raw) {
 
 // ── Chart factory helpers ─────────────────────────────────
 const chartInstances = {};
-const plotlyChartIds = ['chart-dow', 'chart-dom', 'chart-moy'];
+const plotlyChartIds = ['chart-dow', 'chart-dom', 'chart-moy', 'chart-week-year'];
 
 function destroyChart(id) {
   if (chartInstances[id]) {
@@ -846,6 +879,48 @@ function renderCumulativeChart(d) {
       scales: { x: xScale(), y: yScale('Cumulative Count') }
     }
   });
+}
+
+/* Week/Year Heatmap Chart (last 5 years) */
+function renderWeekYearHeatmapChart(d) {
+  if (!window.Plotly) return;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  window.Plotly.react('chart-week-year', [{
+    type: 'heatmap',
+    x: d.weekYearWeekLabels,
+    y: d.weekYearHeatmapYears,
+    z: d.weekYearHeatmap,
+    colorscale: [
+      [0, '#1f3b77'],
+      [0.35, '#2f7ed8'],
+      [0.6, '#36b1bf'],
+      [0.8, '#f5a623'],
+      [1, '#d64545']
+    ],
+    xgap: 1,
+    ygap: 2,
+    colorbar: {
+      title: 'Count',
+      tickformat: '~s',
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' },
+      titlefont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    },
+    hovertemplate: '%{y} %{x}<br>%{z:,}<extra></extra>'
+  }], {
+    margin: { l: 60, r: 30, t: 8, b: 35 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: isLight ? '#3a5a8a' : '#9ab3d8', family: "'Segoe UI', system-ui, sans-serif", size: 11 },
+    xaxis: {
+      tickmode: 'array',
+      tickvals: d.weekYearWeekLabels.filter((_, i) => i % 4 === 0),
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    },
+    yaxis: {
+      autorange: 'reversed',
+      tickfont: { color: isLight ? '#3a5a8a' : '#9ab3d8' }
+    }
+  }, { responsive: true, displayModeBar: false });
 }
 
 /* 8. Cumulative Yearly Table */
@@ -1173,7 +1248,8 @@ function renderDowTable(d) {
     tr.innerHTML = `
       <td>${label}</td>
       <td>${fmt(Math.round(d.dowAvg[i]))}</td>
-      <td>${d.dowRecent[i] != null ? fmt(d.dowRecent[i]) : '—'}</td>
+      <td>${d.dowMin[i] != null ? fmt(d.dowMin[i]) : '—'}</td>
+      <td>${d.dowMax[i] != null ? fmt(d.dowMax[i]) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1189,7 +1265,8 @@ function renderDomTable(d) {
     tr.innerHTML = `
       <td>${i + 1}</td>
       <td>${value != null ? fmt(Math.round(value)) : '—'}</td>
-      <td>${d.domRecent[i] != null ? fmt(d.domRecent[i]) : '—'}</td>
+      <td>${d.domMin[i] != null ? fmt(d.domMin[i]) : '—'}</td>
+      <td>${d.domMax[i] != null ? fmt(d.domMax[i]) : '—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1200,15 +1277,34 @@ function renderMoyTable(d) {
   const tbody = document.getElementById('tbody-moy');
   if (!tbody) return;
   tbody.innerHTML = '';
-  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  labels.forEach((label, i) => {
+  d.heatmapYears.forEach((year, i) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${label}</td>
-      <td>${fmt(Math.round(d.moyAvg[i]))}</td>
-      <td>${d.moyRecent[i] != null ? fmt(d.moyRecent[i]) : '—'}</td>
-    `;
+    const monthCells = d.moyHeatmap[i]
+      .map(v => `<td>${v != null ? fmt(v) : '—'}</td>`)
+      .join('');
+    tr.innerHTML = `<td>${year}</td>${monthCells}`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Week/Year Table (last 5 years) */
+function renderWeekYearTable(d) {
+  const thead = document.getElementById('thead-week-year');
+  const tbody = document.getElementById('tbody-week-year');
+  if (!thead || !tbody) return;
+
+  thead.innerHTML = '';
+  const headerRow = document.createElement('tr');
+  headerRow.innerHTML = `<th>Year</th>${d.weekYearWeekLabels.map(w => `<th>${w}</th>`).join('')}`;
+  thead.appendChild(headerRow);
+
+  tbody.innerHTML = '';
+  d.weekYearHeatmapYears.forEach((year, i) => {
+    const tr = document.createElement('tr');
+    const weekCells = d.weekYearHeatmap[i]
+      .map(v => `<td>${v != null ? fmt(v) : '—'}</td>`)
+      .join('');
+    tr.innerHTML = `<td>${year}</td>${weekCells}`;
     tbody.appendChild(tr);
   });
 }
@@ -1337,6 +1433,7 @@ function toggleTheme() {
     renderDowChart(window._dashData);
     renderDomChart(window._dashData);
     renderMoyChart(window._dashData);
+    renderWeekYearHeatmapChart(window._dashData);
     renderCumulativeChart(window._dashData);
     renderNonCumChart(window._dashData);
     renderDaily60Chart(window._dashData);
@@ -1380,6 +1477,8 @@ async function init() {
     renderDomTable(data);
     renderMoyChart(data);
     renderMoyTable(data);
+    renderWeekYearHeatmapChart(data);
+    renderWeekYearTable(data);
     renderCumulativeChart(data);
     renderCumTable(data);
     renderNonCumChart(data);

@@ -89,7 +89,7 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 1 | **Total Reporting Counts** | Total all-time, this year, this month |
 | 2 | **Daily Reporting Stats** | Avg / Max / Min / Median for all time, last 12 months, last 30 days |
 | 3 | **Reporting Growth Metrics** | % change — last 12 mo vs previous 12 mo; last 30 days vs previous 30 days |
-| 4 | **Day of Week Avg (last 365 d)** | Bar chart — average count per weekday (Mon–Sun) |
+| 4 | **Day of Week Distribution — Last 365 Days** | Boxplot distribution by weekday |
 | 5 | **Cumulative Yearly Chart** | Bar = running total by year; dashed line = linear-regression forecast for current year + next 2 |
 | 6 | **Annual Reporting Volume** | Bar = yearly totals; dashed line = linear-regression forecast |
 | 7 | **Cumulative Yearly Table** | Tabular data matching panel 5 |
@@ -101,9 +101,13 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 13 | **Weekly Cumulative Reporting Comparison — Last 4 Years** | Cumulative line chart by week-of-year for current and previous 3 calendar years |
 | 14 | **Weekly Cumulative Reporting Comparison — Last 4 Years — Table** | Tabular cumulative weekly values for the same 4 years |
 | 15 | **Yearly Share Pie Chart** | Pie chart of total count per year |
-| 16 | **Day of Week Avg Count — Last 365 Days — Table** | Tabular weekday averages matching the day-of-week boxplot |
-| 17 | **Day of Month Avg Count — Last 2 Years — Table** | Tabular day-of-month averages matching the day-of-month boxplot |
-| 18 | **Month of Year Avg Count — Last 5 Years — Table** | Tabular month-of-year averages matching the month/year heatmap |
+| 16 | **Day of Week Distribution Stats — Last 365 Days** | Tabular weekday average, minimum, and maximum values |
+| 17 | **Day of Month Distribution — Last 2 Years** | Boxplot distribution by day of month |
+| 18 | **Day of Month Distribution Stats — Last 2 Years — Table** | Tabular day-of-month average, minimum, and maximum values |
+| 19 | **Month/Year Reporting Heatmap — Last 5 Years** | Heatmap of monthly totals by year and month |
+| 20 | **Month/Year Reporting — Last 5 Years — Table** | Tabular month-by-month totals by year (same data as heatmap) |
+| 21 | **Week/Year Reporting Heatmap — Last 5 Years** | Heatmap of weekly totals by year and week |
+| 22 | **Week/Year Reporting — Last 5 Years — Table** | Tabular weekly totals by year (same data as heatmap) |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next
