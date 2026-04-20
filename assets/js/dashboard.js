@@ -86,18 +86,21 @@ const COLUMN_SPLITS = [
     key: '50-50',
     label: '50/50',
     columns: '1fr 1fr',
+    printColumns: '50% 50%',
     title: 'Columns: 50% / 50% (click to 60/40)'
   },
   {
     key: '60-40',
     label: '60/40',
     columns: '3fr 2fr',
+    printColumns: '60% 40%',
     title: 'Columns: 60% / 40% (click to 70/30)'
   },
   {
     key: '70-30',
     label: '70/30',
     columns: '7fr 3fr',
+    printColumns: '70% 30%',
     title: 'Columns: 70% / 30% (click to 50/50)'
   }
 ];
@@ -119,6 +122,7 @@ function applyColumnSplit(key) {
   const root = document.documentElement;
   root.setAttribute('data-column-split', split.key);
   root.style.setProperty('--dashboard-columns', split.columns);
+  root.style.setProperty('--dashboard-columns-print', split.printColumns || split.columns);
   updateColumnToggleButton(split);
 }
 
