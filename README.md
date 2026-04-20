@@ -219,6 +219,8 @@ variation, and adds 10 % Gaussian noise for realism.
 Open the dashboard in your browser, then use **File → Print** (or
 `Ctrl + P` / `⌘ + P`) and choose **Save as PDF**. Printing uses the same
 layout and sizing as the on-screen view (no print-specific resizing).
+If your browser omits background colors by default, enable **Background
+graphics** in the print dialog to preserve chart fills.
 
 ---
 
