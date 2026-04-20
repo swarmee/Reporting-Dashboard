@@ -101,6 +101,7 @@ const COLUMN_SPLITS = [
     title: 'Columns: 70% / 30% (click to 50/50)'
   }
 ];
+const DEFAULT_COLUMN_SPLIT = COLUMN_SPLITS[0];
 
 function getCurrentColumnSplitKey() {
   return document.documentElement.getAttribute('data-column-split') || '50-50';
@@ -114,7 +115,7 @@ function updateColumnToggleButton(split) {
 }
 
 function applyColumnSplit(key) {
-  const split = COLUMN_SPLITS.find(item => item.key === key) || COLUMN_SPLITS[0];
+  const split = COLUMN_SPLITS.find(item => item.key === key) || DEFAULT_COLUMN_SPLIT;
   const root = document.documentElement;
   root.setAttribute('data-column-split', split.key);
   root.style.setProperty('--dashboard-columns', split.columns);
@@ -124,7 +125,8 @@ function applyColumnSplit(key) {
 function toggleColumnSplit() {
   const currentKey = getCurrentColumnSplitKey();
   const idx = COLUMN_SPLITS.findIndex(item => item.key === currentKey);
-  const next = COLUMN_SPLITS[(idx + 1 + COLUMN_SPLITS.length) % COLUMN_SPLITS.length];
+  const currentIndex = idx >= 0 ? idx : 0;
+  const next = COLUMN_SPLITS[(currentIndex + 1) % COLUMN_SPLITS.length];
   applyColumnSplit(next.key);
 }
 
