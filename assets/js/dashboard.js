@@ -1501,7 +1501,19 @@ function snapDataTableWrapperHeights() {
     );
     wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
-  syncChartPanelsToTables();
+  scheduleChartPanelSync();
+}
+
+let chartPanelSyncFrame = null;
+
+function scheduleChartPanelSync() {
+  if (chartPanelSyncFrame) {
+    cancelAnimationFrame(chartPanelSyncFrame);
+  }
+  chartPanelSyncFrame = requestAnimationFrame(() => {
+    chartPanelSyncFrame = null;
+    syncChartPanelsToTables();
+  });
 }
 
 function resetChartPanelSizing(panel) {
@@ -1589,10 +1601,10 @@ function syncChartPanelsToTables() {
 
       const pieWrap = panel.querySelector('.pie-canvas-wrap');
       if (pieWrap) {
-        const availableWidth = pieContainer.clientWidth > 0
-          ? pieContainer.clientWidth
-          : CONFIG.MAX_PIE_CHART_SIZE;
-        const pieSize = Math.min(CONFIG.MAX_PIE_CHART_SIZE, targetHeight, availableWidth);
+        const availableWidth = pieContainer.clientWidth;
+        const pieSize = availableWidth > 0
+          ? Math.min(CONFIG.MAX_PIE_CHART_SIZE, targetHeight, availableWidth)
+          : Math.min(CONFIG.MAX_PIE_CHART_SIZE, targetHeight);
         pieWrap.style.width = `${pieSize}px`;
         pieWrap.style.height = `${pieSize}px`;
       }
