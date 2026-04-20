@@ -579,3 +579,37 @@ body {
   .dashboard-header { flex-direction: column; align-items: flex-start; }
   .header-meta { align-items: flex-start; }
 }
+
+/* ────────────────────────────────────────────────────────────
+   PRINT / PDF STYLES
+   ──────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm 8mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body { background: var(--bg-body) !important; }
+
+  #loading-overlay,
+  #error-overlay { display: none !important; }
+
+  .dashboard-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px 24px 40px;
+  }
+
+  .panel {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .panel-full { grid-column: 1 / -1; }
+}

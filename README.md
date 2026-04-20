@@ -45,7 +45,7 @@ Reporting-Dashboard/
 | File | Purpose |
 |------|---------|
 | `index.html` | Defines the two-column grid layout, all panel skeletons, and links to assets. |
-| `assets/css/style.css` | CSS custom-properties themes (light by default, plus dark and Ukraine via toggle). `@media print` block preserves dashboard colours in PDF output via `print-color-adjust: exact`. |
+| `assets/css/style.css` | CSS custom-properties themes (light by default, plus dark and Ukraine via toggle). `@media print` enforces landscape output with two panels per row and preserves dashboard colours via `print-color-adjust: exact`. |
 | `assets/js/dashboard.js` | Fetches data from the API, performs all calculations (totals, stats, regressions, moving averages), and renders all dashboard charts/tables (Chart.js + boxplot + matrix plugins). |
 | `assets/js/chart.umd.min.js` | Chart.js v4.5.1 UMD bundle — **no internet required**. |
 | `assets/js/chartjs-chart-boxplot.min.js` | Chart.js boxplot plugin bundle — **no internet required**. |
@@ -217,10 +217,12 @@ variation, and adds 10 % Gaussian noise for realism.
 ## Print / PDF Support
 
 Open the dashboard in your browser, then use **File → Print** (or
-`Ctrl + P` / `⌘ + P`) and choose **Save as PDF**. Printing uses the same
-layout and sizing as the on-screen view (no print-specific resizing).
-If your browser omits background colors by default, enable **Background
-graphics** in the print dialog to preserve chart fills.
+`Ctrl + P` / `⌘ + P`) and choose **Save as PDF**.
+
+Print formatting keeps the dashboard in **landscape** with **two panels per
+row**, matching the on-screen layout as closely as possible without any chart
+resizing. If your browser omits background colors by default, enable
+**Background graphics** in the print dialog to preserve chart fills.
 
 ---
 
