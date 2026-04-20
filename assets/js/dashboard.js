@@ -80,6 +80,54 @@ function updateThemeToggleButton() {
   }
 }
 
+// ── Column layout helpers ───────────────────────────────────
+const COLUMN_SPLITS = [
+  {
+    key: '50-50',
+    label: '50/50',
+    columns: '1fr 1fr',
+    title: 'Columns: 50% / 50% (click to 60/40)'
+  },
+  {
+    key: '60-40',
+    label: '60/40',
+    columns: '3fr 2fr',
+    title: 'Columns: 60% / 40% (click to 70/30)'
+  },
+  {
+    key: '70-30',
+    label: '70/30',
+    columns: '7fr 3fr',
+    title: 'Columns: 70% / 30% (click to 50/50)'
+  }
+];
+
+function getCurrentColumnSplitKey() {
+  return document.documentElement.getAttribute('data-column-split') || '50-50';
+}
+
+function updateColumnToggleButton(split) {
+  const btn = document.getElementById('column-toggle');
+  if (!btn) return;
+  btn.textContent = split.label;
+  btn.title = split.title;
+}
+
+function applyColumnSplit(key) {
+  const split = COLUMN_SPLITS.find(item => item.key === key) || COLUMN_SPLITS[0];
+  const root = document.documentElement;
+  root.setAttribute('data-column-split', split.key);
+  root.style.setProperty('--dashboard-columns', split.columns);
+  updateColumnToggleButton(split);
+}
+
+function toggleColumnSplit() {
+  const currentKey = getCurrentColumnSplitKey();
+  const idx = COLUMN_SPLITS.findIndex(item => item.key === currentKey);
+  const next = COLUMN_SPLITS[(idx + 1 + COLUMN_SPLITS.length) % COLUMN_SPLITS.length];
+  applyColumnSplit(next.key);
+}
+
 // ── Chart defaults ─────────────────────────────────────────
 applyChartDefaultsForTheme();
 Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
@@ -1626,6 +1674,7 @@ async function fetchData() {
 
 async function init() {
   try {
+    applyColumnSplit(getCurrentColumnSplitKey());
     updateThemeToggleButton();
     const raw  = await fetchData();
     const data = processData(raw);

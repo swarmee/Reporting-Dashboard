@@ -27,6 +27,7 @@
   --radius-sm:     4px;
   --shadow:        0 4px 20px rgba(0,0,0,.45);
   --shadow-sm:     0 2px 8px  rgba(0,0,0,.30);
+  --dashboard-columns: 1fr 1fr;
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
@@ -162,6 +163,12 @@ body {
   min-width: 260px;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .meta-item {
   display: flex;
   align-items: baseline;
@@ -187,7 +194,7 @@ body {
 .dashboard-main {
   padding: 20px 24px 40px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: var(--dashboard-columns);
   gap: 20px;
 }
 
@@ -233,8 +240,9 @@ body {
   border-color: var(--border-light);
 }
 
-/* ── Theme Toggle ────────────────────────────────────────── */
-.theme-toggle-btn {
+/* ── Header Toggles ──────────────────────────────────────── */
+.theme-toggle-btn,
+.layout-toggle-btn {
   background: none;
   border: 1px solid var(--border-light);
   color: var(--text-secondary);
@@ -246,7 +254,8 @@ body {
   transition: color .15s, border-color .15s, background .15s;
   white-space: nowrap;
 }
-.theme-toggle-btn:hover {
+.theme-toggle-btn:hover,
+.layout-toggle-btn:hover {
   color: var(--accent-blue);
   background: var(--bg-card-alt);
   border-color: var(--accent-blue);
