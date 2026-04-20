@@ -30,10 +30,12 @@
 
   --panel-body-padding-y: 16px;
   --panel-body-padding-x: 18px;
-  --table-row-height: 30px;
-  --table-header-height: 32px;
   --table-row-border-width: 1px;
-  --table-10-rows-height: calc(var(--table-header-height) + (10 * var(--table-row-height)) + (10 * var(--table-row-border-width)));
+  --table-row-total-height: 30px;
+  --table-header-total-height: 32px;
+  --table-cell-padding-y: 4px;
+  --table-header-padding-y: 4px;
+  --table-10-rows-total-height: calc(var(--table-header-total-height) + (10 * var(--table-row-total-height)) + (10 * var(--table-row-border-width)));
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
@@ -439,7 +441,7 @@ body {
 .chart-container {
   position: relative;
   flex: 1;
-  min-height: calc(var(--table-10-rows-height) - (2 * var(--panel-body-padding-y)));
+  min-height: calc(var(--table-10-rows-total-height) - (2 * var(--panel-body-padding-y)));
 }
 
 .chart-container canvas {
@@ -452,7 +454,7 @@ body {
 /* ── Data Tables (Yearly / Weekly / Monthly) ─────────────── */
 .data-table-wrapper {
   overflow-y: auto;
-  max-height: var(--table-10-rows-height);
+  max-height: var(--table-10-rows-total-height);
   flex: 1;
 }
 
@@ -471,9 +473,10 @@ body {
   text-transform: uppercase;
   letter-spacing: .08em;
   font-weight: 600;
-  padding: 0 12px;
-  height: var(--table-header-height);
-  line-height: var(--table-header-height);
+  padding: var(--table-header-padding-y) 12px;
+  min-height: calc(var(--table-header-total-height) - (2 * var(--table-header-padding-y)));
+  line-height: 1.4;
+  vertical-align: middle;
   text-align: right;
   border-bottom: var(--table-row-border-width) solid var(--border-light);
   white-space: nowrap;
@@ -482,9 +485,10 @@ body {
 .data-table th:first-child { text-align: left; }
 
 .data-table td {
-  padding: 0 12px;
-  height: var(--table-row-height);
-  line-height: var(--table-row-height);
+  padding: var(--table-cell-padding-y) 12px;
+  min-height: calc(var(--table-row-total-height) - (2 * var(--table-cell-padding-y)));
+  line-height: 1.4;
+  vertical-align: middle;
   text-align: right;
   border-bottom: var(--table-row-border-width) solid var(--border);
   font-family: var(--font-mono);
@@ -527,7 +531,7 @@ body {
   align-items: flex-start;
   flex-wrap: wrap;
   flex: 1;
-  min-height: calc(var(--table-10-rows-height) - (2 * var(--panel-body-padding-y)));
+  min-height: calc(var(--table-10-rows-total-height) - (2 * var(--panel-body-padding-y)));
 }
 
 .pie-canvas-wrap {
@@ -541,7 +545,7 @@ body {
   flex: 1;
   min-width: 180px;
   overflow-y: auto;
-  max-height: var(--table-10-rows-height);
+  max-height: var(--table-10-rows-total-height);
 }
 
 .pie-legend-item {
