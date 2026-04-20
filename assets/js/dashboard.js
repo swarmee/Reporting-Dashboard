@@ -100,7 +100,6 @@ const COLORS = {
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const PRINT_LAYOUT_SYNC_DELAY_MS = 100;
 
 function pieColors(n) {
   return Array.from({ length: n }, (_, i) =>
@@ -235,42 +234,6 @@ function onFullscreenChange() {
 }
 document.addEventListener('fullscreenchange', onFullscreenChange);
 document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-function syncLayoutForPrint() {
-  Object.values(chartInstances).forEach(chart => {
-    try { chart.resize(); } catch (e) { /* ignore */ }
-  });
-  snapDataTableWrapperHeights();
-}
-
-function restoreLayoutAfterPrint() {
-  Object.values(chartInstances).forEach(chart => {
-    try { chart.resize(); } catch (e) { /* ignore */ }
-  });
-  snapDataTableWrapperHeights();
-}
-
-window.addEventListener('beforeprint', () => {
-  syncLayoutForPrint();
-  setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
-});
-window.addEventListener('afterprint', () => {
-  setTimeout(restoreLayoutAfterPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
-});
-
-if (window.matchMedia) {
-  const printMedia = window.matchMedia('print');
-  if (printMedia?.addEventListener) {
-    printMedia.addEventListener('change', e => {
-      if (e.matches) {
-        syncLayoutForPrint();
-        setTimeout(syncLayoutForPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
-      } else {
-        setTimeout(restoreLayoutAfterPrint, PRINT_LAYOUT_SYNC_DELAY_MS);
-      }
-    });
-  }
-}
 
 window.addEventListener('resize', () => {
   snapDataTableWrapperHeights();

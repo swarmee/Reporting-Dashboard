@@ -217,16 +217,8 @@ variation, and adds 10 % Gaussian noise for realism.
 ## Print / PDF Support
 
 Open the dashboard in your browser, then use **File → Print** (or
-`Ctrl + P` / `⌘ + P`) and choose **Save as PDF**.
-
-The `@media print` CSS block:
-
-* Sets the page to **A3 landscape** for wide charts.
-* Uses `print-color-adjust: exact` so that dashboard backgrounds and chart
-  colours are preserved in the PDF exactly as they appear on screen.
-* Applies `break-inside: avoid` to each panel card so charts and tables are
-  not split across pages.
-* Removes animated overlays.
+`Ctrl + P` / `⌘ + P`) and choose **Save as PDF**. Printing uses the same
+layout and sizing as the on-screen view (no print-specific resizing).
 
 ---
 
