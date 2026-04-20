@@ -124,9 +124,8 @@ function applyColumnSplit(key) {
 
 function toggleColumnSplit() {
   const currentKey = getCurrentColumnSplitKey();
-  const idx = COLUMN_SPLITS.findIndex(item => item.key === currentKey);
-  const currentIndex = idx >= 0 ? idx : 0;
-  const next = COLUMN_SPLITS[(currentIndex + 1) % COLUMN_SPLITS.length];
+  const currentIndex = COLUMN_SPLITS.findIndex(item => item.key === currentKey);
+  const next = COLUMN_SPLITS[(Math.max(0, currentIndex) + 1) % COLUMN_SPLITS.length];
   applyColumnSplit(next.key);
 }
 
