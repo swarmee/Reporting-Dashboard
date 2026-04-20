@@ -15,6 +15,7 @@ const CONFIG = {
   FROM_DATE: '1970-01-01',
   MAX_X_LABELS: 10,
   MAX_VISIBLE_TABLE_ROWS: 10,
+  MAX_PIE_CHART_SIZE: 320,
   REGRESSION_YEARS: 8,       // training window for linear regression (yearly)
   FORECAST_EXTRA_YEARS: 4,   // forecast years beyond current year
   WEEKLY_FORECAST: 3,        // weeks to forecast
@@ -1582,7 +1583,7 @@ function syncChartPanelsToTables() {
 
       const pieWrap = panel.querySelector('.pie-canvas-wrap');
       if (pieWrap) {
-        const pieSize = Math.min(320, targetHeight);
+        const pieSize = Math.min(CONFIG.MAX_PIE_CHART_SIZE, targetHeight);
         pieWrap.style.width = `${pieSize}px`;
         pieWrap.style.height = `${pieSize}px`;
       }
@@ -1595,7 +1596,11 @@ function syncChartPanelsToTables() {
   });
 
   Object.values(chartInstances).forEach(chart => {
-    try { chart.resize(); } catch (e) { /* ignore */ }
+    try {
+      chart.resize();
+    } catch (e) {
+      console.warn('[ROGI] Chart resize failed', e);
+    }
   });
 }
 
