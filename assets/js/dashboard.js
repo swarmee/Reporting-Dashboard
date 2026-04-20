@@ -235,12 +235,9 @@ function onFullscreenChange() {
 document.addEventListener('fullscreenchange', onFullscreenChange);
 document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-window.addEventListener('resize', () => {
-  snapDataTableWrapperHeights();
-});
-window.addEventListener('beforeprint', () => {
-  snapDataTableWrapperHeights();
-});
+const snapTableHeights = () => snapDataTableWrapperHeights();
+window.addEventListener('resize', snapTableHeights);
+window.addEventListener('beforeprint', snapTableHeights);
 
 // ── Data processing ───────────────────────────────────────
 function processData(raw) {
@@ -1495,7 +1492,7 @@ function snapDataTableWrapperHeights() {
     if (!(headerHeight > 0 && rowHeight > 0)) return;
 
     const availableHeight = baseMaxHeight - headerHeight;
-    const visibleRows = Math.max(1, Math.floor(Math.max(0, availableHeight) / rowHeight));
+    const visibleRows = Math.max(1, Math.floor(availableHeight / rowHeight));
     wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
 }
