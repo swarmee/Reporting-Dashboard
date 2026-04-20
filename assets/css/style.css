@@ -594,7 +594,10 @@ body {
     print-color-adjust: exact !important;
   }
 
-  body { background: var(--bg-body) !important; }
+  body {
+    background: var(--bg-body) !important;
+    zoom: 0.7;
+  }
 
   #loading-overlay,
   #error-overlay { display: none !important; }
