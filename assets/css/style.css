@@ -596,7 +596,8 @@ body {
 
   body {
     background: var(--bg-body) !important;
-    zoom: 0.7;
+    transform: scale(0.7);
+    transform-origin: top left;
   }
 
   #loading-overlay,
