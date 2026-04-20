@@ -596,8 +596,17 @@ body {
 
   body {
     background: var(--bg-body) !important;
-    transform: scale(0.7);
-    transform-origin: top left;
+  }
+
+  @supports (zoom: 1) {
+    body { zoom: 0.7; }
+  }
+
+  @supports not (zoom: 1) {
+    body {
+      transform: scale(0.7);
+      transform-origin: top left;
+    }
   }
 
   #loading-overlay,
