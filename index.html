@@ -614,6 +614,84 @@
     </div>
   </section>
 
+  <!-- Row: Annual Growth | Annual Growth Table -->
+
+  <!-- Panel – Annual Growth (last 12 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📈</span>
+      <h2 class="panel-title">Annual Growth — Last 12 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-annual-growth" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel – Annual Growth Table (last 12 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Annual Growth — Last 12 Years — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Annual Total</th>
+              <th>Annual Growth</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-annual-growth"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row: Monthly Growth | Monthly Growth Table -->
+
+  <!-- Panel – Monthly Growth (last 4 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">📈</span>
+      <h2 class="panel-title">Monthly Growth — Last 4 Years</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body">
+      <div class="chart-container">
+        <canvas id="chart-monthly-growth" class="chart-canvas"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel – Monthly Growth Table (last 4 years) -->
+  <section class="panel">
+    <div class="panel-header">
+      <span class="panel-icon">🗂️</span>
+      <h2 class="panel-title">Monthly Growth — Last 4 Years — Table</h2>
+      <button class="panel-expand-btn" title="Expand panel" onclick="toggleFullscreen(this.closest('.panel'))">⛶</button>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Monthly Total</th>
+              <th>Monthly Growth</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-monthly-growth"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ── Footer ────────────────────────────────────────────── -->

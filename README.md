@@ -110,6 +110,10 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 20 | **Month/Year Reporting — Last 5 Years — Table** | Tabular month-by-month totals by year (same data as heatmap) |
 | 21 | **Week/Year Reporting Heatmap — Last 5 Years** | Heatmap of weekly totals by year and week |
 | 22 | **Week/Year Reporting — Last 5 Years — Table** | Tabular weekly totals by year (same data as heatmap) |
+| 23 | **Annual Growth — Last 12 Years** | Line chart of annual growth percentages vs prior year |
+| 24 | **Annual Growth — Last 12 Years — Table** | Annual totals and growth percentages for the last 12 years |
+| 25 | **Monthly Growth — Last 4 Years** | Line chart of monthly growth percentages vs prior month |
+| 26 | **Monthly Growth — Last 4 Years — Table** | Monthly totals and growth percentages for the last 4 years |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next

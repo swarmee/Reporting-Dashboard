@@ -259,6 +259,7 @@ function processData(raw) {
   const last7Start   = addDays(today, -7);
   const prev7Start   = addDays(today, -14);
   const twoYrStart   = addDays(today, -730);
+  const fourYrStart  = addDays(today, -1460);
   const fiveYrStart  = addDays(today, -1825);
   const last60Start  = addDays(today, -60);
 
@@ -367,12 +368,26 @@ function processData(raw) {
 
   // ── Yearly aggregates ──────────────────────────────────
   const yearMap = {};
+  const fourYrMonthMap = {};
   records.forEach(r => {
     const y = r.date.slice(0, 4);
     yearMap[y] = (yearMap[y] || 0) + r.count;
+    if (r.date >= fourYrStart) {
+      const m = r.date.slice(0, 7);
+      fourYrMonthMap[m] = (fourYrMonthMap[m] || 0) + r.count;
+    }
   });
   const years   = Object.keys(yearMap).sort();
   const yTotals = years.map(y => yearMap[y]);
+
+  // Annual growth (last 12 years)
+  const annualGrowthYears = years.slice(-12);
+  const annualGrowthTotals = annualGrowthYears.map(y => yearMap[y] ?? 0);
+  const annualGrowthRates = annualGrowthYears.map(y => {
+    const prevTotal = yearMap[String(Number(y) - 1)];
+    const currentTotal = yearMap[y] ?? 0;
+    return prevTotal > 0 ? ((currentTotal - prevTotal) / prevTotal) * 100 : null;
+  });
 
   // Cumulative
   let cum = 0;
@@ -537,6 +552,18 @@ function processData(raw) {
     return null;
   });
 
+  // ── Monthly growth (last 4 years) ─────────────────────────────
+  const monthlyGrowthMonths = Array.from(
+    { length: 48 },
+    (_, i) => addMonths(currentMon, i - 47)
+  );
+  const monthlyGrowthTotals = monthlyGrowthMonths.map(m => fourYrMonthMap[m] ?? 0);
+  const monthlyGrowthRates = monthlyGrowthTotals.map((total, i) => {
+    if (i === 0) return null;
+    const prev = monthlyGrowthTotals[i - 1];
+    return prev > 0 ? ((total - prev) / prev) * 100 : null;
+  });
+
   // ── Weekly cumulative comparison (current + previous 3 years) ─────────────
   const weeklyCumYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3].map(String);
   const maxWeeks = Math.max(
@@ -659,6 +686,7 @@ function processData(raw) {
     weekYearHeatmapMin, weekYearHeatmapMax,
     // yearly
     years, yTotals, yCumulative,
+    annualGrowthYears, annualGrowthTotals, annualGrowthRates,
     allYearLabels, barNonCum, barCum,
     forecastYrs, forecastLineNonCum, forecastLineCum,
     trainYrs,
@@ -674,6 +702,8 @@ function processData(raw) {
     monAllKeys, monBarData, monRegLine, monBestFit,
     monKeys, monVals, monForecastKeys,
     nMons,
+    // monthly growth
+    monthlyGrowthMonths, monthlyGrowthTotals, monthlyGrowthRates,
     // weekly cumulative comparison
     weeklyCumWeekLabels,
     weeklyCumYears,
@@ -711,6 +741,21 @@ function yScale(title) {
     grid: { color: colors.grid },
     ticks: {
       callback: v => fmtCompact(v),
+      maxTicksLimit: 6,
+      color: colors.text
+    },
+    title: title
+      ? { display: true, text: title, color: colors.title, font: { size: 10 } }
+      : undefined
+  };
+}
+
+function pctScale(title) {
+  const colors = getChartThemeColors();
+  return {
+    grid: { color: colors.grid },
+    ticks: {
+      callback: v => fmtPct(Number(v)),
       maxTicksLimit: 6,
       color: colors.text
     },
@@ -1322,6 +1367,108 @@ function renderMonthlyTable(d) {
   });
 }
 
+/* Annual Growth Chart (last 12 years) */
+function renderAnnualGrowthChart(d) {
+  makeChart('chart-annual-growth', {
+    type: 'line',
+    data: {
+      labels: d.annualGrowthYears,
+      datasets: [
+        {
+          label: 'Annual Growth',
+          data: d.annualGrowthRates,
+          borderColor: COLORS.green,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3,
+          tension: 0.25,
+          spanGaps: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y == null ? '—' : fmtPct(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: { x: xScale(12), y: pctScale('Growth %') }
+    }
+  });
+}
+
+/* Annual Growth Table (last 12 years) */
+function renderAnnualGrowthTable(d) {
+  const tbody = document.getElementById('tbody-annual-growth');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  [...d.annualGrowthYears].reverse().forEach((y, revI) => {
+    const i = d.annualGrowthYears.length - 1 - revI;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${y}</td>
+      <td>${fmt(d.annualGrowthTotals[i])}</td>
+      <td>${d.annualGrowthRates[i] != null ? fmtPct(d.annualGrowthRates[i]) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* Monthly Growth Chart (last 4 years) */
+function renderMonthlyGrowthChart(d) {
+  makeChart('chart-monthly-growth', {
+    type: 'line',
+    data: {
+      labels: d.monthlyGrowthMonths,
+      datasets: [
+        {
+          label: 'Monthly Growth',
+          data: d.monthlyGrowthRates,
+          borderColor: COLORS.purple,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.25,
+          spanGaps: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y == null ? '—' : fmtPct(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: { x: xScale(12), y: pctScale('Growth %') }
+    }
+  });
+}
+
+/* Monthly Growth Table (last 4 years) */
+function renderMonthlyGrowthTable(d) {
+  const tbody = document.getElementById('tbody-monthly-growth');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  [...d.monthlyGrowthMonths].reverse().forEach((m, revI) => {
+    const i = d.monthlyGrowthMonths.length - 1 - revI;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${m}</td>
+      <td>${fmt(d.monthlyGrowthTotals[i])}</td>
+      <td>${d.monthlyGrowthRates[i] != null ? fmtPct(d.monthlyGrowthRates[i]) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 /* 17. Weekly cumulative comparison chart (last 4 years) */
 function renderWeeklyCumulativeComparisonChart(d) {
   const lineColors = [COLORS.blue, COLORS.teal, COLORS.purple, COLORS.amber];
@@ -1494,7 +1641,9 @@ function snapDataTableWrapperHeights() {
     const availableHeight = baseMaxHeight - headerHeight;
     if (availableHeight <= 0) return;
     const visibleRows = Math.max(1, Math.floor(availableHeight / rowHeight));
-    wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
+    const maxRows = Number(wrapper.dataset.maxRows || 12);
+    const cappedRows = Number.isFinite(maxRows) ? Math.min(visibleRows, maxRows) : visibleRows;
+    wrapper.style.maxHeight = `${headerHeight + (cappedRows * rowHeight)}px`;
   });
 }
 
@@ -1603,6 +1752,8 @@ function toggleTheme() {
     renderWeeklyChart(window._dashData);
     renderWeeklyCumulativeComparisonChart(window._dashData);
     renderMonthlyChart(window._dashData);
+    renderAnnualGrowthChart(window._dashData);
+    renderMonthlyGrowthChart(window._dashData);
     renderPieChart(window._dashData);
   }
 }
@@ -1655,6 +1806,10 @@ async function init() {
     renderWeeklyCumulativeComparisonTable(data);
     renderMonthlyChart(data);
     renderMonthlyTable(data);
+    renderAnnualGrowthChart(data);
+    renderAnnualGrowthTable(data);
+    renderMonthlyGrowthChart(data);
+    renderMonthlyGrowthTable(data);
     renderPieChart(data);
     renderPieTable(data);
     renderLast5YearSummary(data);
