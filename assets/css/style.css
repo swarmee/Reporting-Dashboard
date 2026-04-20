@@ -602,6 +602,7 @@ body {
   .dashboard-main {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    align-items: start;
     gap: 20px;
     padding: 20px 24px 40px;
   }
