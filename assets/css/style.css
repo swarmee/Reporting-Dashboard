@@ -28,6 +28,7 @@
   --shadow:        0 4px 20px rgba(0,0,0,.45);
   --shadow-sm:     0 2px 8px  rgba(0,0,0,.30);
   --dashboard-columns: 1fr 1fr;
+  --dashboard-columns-print: 50% 50%;
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
@@ -610,7 +611,7 @@ body {
 
   .dashboard-main {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: var(--dashboard-columns-print, var(--dashboard-columns));
     gap: 20px;
     padding: 20px 24px 40px;
   }
