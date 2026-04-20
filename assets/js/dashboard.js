@@ -14,6 +14,7 @@ const CONFIG = {
   })(),
   FROM_DATE: '1970-01-01',
   MAX_X_LABELS: 10,
+  MAX_VISIBLE_TABLE_ROWS: 10,
   REGRESSION_YEARS: 8,       // training window for linear regression (yearly)
   FORECAST_EXTRA_YEARS: 4,   // forecast years beyond current year
   WEEKLY_FORECAST: 3,        // weeks to forecast
@@ -1493,7 +1494,10 @@ function snapDataTableWrapperHeights() {
 
     const availableHeight = baseMaxHeight - headerHeight;
     if (availableHeight <= 0) return;
-    const visibleRows = Math.max(1, Math.floor(availableHeight / rowHeight));
+    const visibleRows = Math.max(
+      1,
+      Math.min(CONFIG.MAX_VISIBLE_TABLE_ROWS, Math.floor(availableHeight / rowHeight))
+    );
     wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
 }
