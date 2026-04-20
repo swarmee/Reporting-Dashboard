@@ -39,7 +39,7 @@
   --table-header-padding-y: 8px;
   --table-row-total-height: calc((var(--table-row-font-size) * var(--table-row-line-height)) + (2 * var(--table-cell-padding-y)));
   --table-header-total-height: calc((var(--table-header-font-size) * var(--table-header-line-height)) + (2 * var(--table-header-padding-y)));
-  --table-10-rows-total-height: calc(var(--table-header-total-height) + (10 * var(--table-row-total-height)) + (10 * var(--table-row-border-width)));
+  --table-10-rows-total-height: calc(var(--table-header-total-height) + (15 * var(--table-row-total-height)) + (15 * var(--table-row-border-width)));
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;

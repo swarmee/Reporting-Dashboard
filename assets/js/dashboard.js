@@ -14,7 +14,7 @@ const CONFIG = {
   })(),
   FROM_DATE: '1970-01-01',
   MAX_X_LABELS: 10,
-  MAX_VISIBLE_TABLE_ROWS: 10,
+  MAX_VISIBLE_TABLE_ROWS: 15,
   MAX_PIE_CHART_SIZE: 320,
   REGRESSION_YEARS: 8,       // training window for linear regression (yearly)
   FORECAST_EXTRA_YEARS: 4,   // forecast years beyond current year
