@@ -37,8 +37,8 @@
   --table-header-line-height: 1.2;
   --table-cell-padding-y: 7px;
   --table-header-padding-y: 8px;
-  --table-row-total-height: calc((var(--table-row-line-height) * var(--table-row-font-size)) + (2 * var(--table-cell-padding-y)));
-  --table-header-total-height: calc((var(--table-header-line-height) * var(--table-header-font-size)) + (2 * var(--table-header-padding-y)));
+  --table-row-total-height: calc((var(--table-row-font-size) * var(--table-row-line-height)) + (2 * var(--table-cell-padding-y)));
+  --table-header-total-height: calc((var(--table-header-font-size) * var(--table-header-line-height)) + (2 * var(--table-header-padding-y)));
   --table-10-rows-total-height: calc(var(--table-header-total-height) + (10 * var(--table-row-total-height)) + (10 * var(--table-row-border-width)));
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
