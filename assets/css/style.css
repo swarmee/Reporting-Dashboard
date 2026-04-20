@@ -32,7 +32,8 @@
   --panel-body-padding-x: 18px;
   --table-row-height: 30px;
   --table-header-height: 32px;
-  --table-10-rows-height: calc(var(--table-header-height) + (10 * var(--table-row-height)));
+  --table-row-border-width: 1px;
+  --table-10-rows-height: calc(var(--table-header-height) + (10 * var(--table-row-height)) + (10 * var(--table-row-border-width)));
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
@@ -474,7 +475,7 @@ body {
   height: var(--table-header-height);
   line-height: var(--table-header-height);
   text-align: right;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: var(--table-row-border-width) solid var(--border-light);
   white-space: nowrap;
 }
 
@@ -485,7 +486,7 @@ body {
   height: var(--table-row-height);
   line-height: var(--table-row-height);
   text-align: right;
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--table-row-border-width) solid var(--border);
   font-family: var(--font-mono);
   font-size: .82rem;
   color: var(--text-primary);
