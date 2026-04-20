@@ -1589,7 +1589,9 @@ function syncChartPanelsToTables() {
 
       const pieWrap = panel.querySelector('.pie-canvas-wrap');
       if (pieWrap) {
-        const availableWidth = pieContainer.clientWidth || CONFIG.MAX_PIE_CHART_SIZE;
+        const availableWidth = pieContainer.clientWidth > 0
+          ? pieContainer.clientWidth
+          : CONFIG.MAX_PIE_CHART_SIZE;
         const pieSize = Math.min(CONFIG.MAX_PIE_CHART_SIZE, targetHeight, availableWidth);
         pieWrap.style.width = `${pieSize}px`;
         pieWrap.style.height = `${pieSize}px`;
@@ -1611,7 +1613,7 @@ function syncChartPanelsToTables() {
     try {
       chart.resize();
     } catch (e) {
-      console.warn('[ROGI] Chart resize failed', e);
+      console.warn('[ROGI] Chart resize failed for chart:', chartId, e);
     }
   });
 }
