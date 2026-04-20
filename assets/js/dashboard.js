@@ -229,7 +229,6 @@ function onFullscreenChange() {
       Object.values(chartInstances).forEach(chart => {
         try { chart.resize(); } catch (e) { /* ignore */ }
       });
-      resizePlotlyCharts();
       snapDataTableWrapperHeights();
     }, 150);
   }
@@ -241,7 +240,6 @@ function syncLayoutForPrint() {
   Object.values(chartInstances).forEach(chart => {
     try { chart.resize(); } catch (e) { /* ignore */ }
   });
-  resizePlotlyCharts({ forceRelayout: true, lockToContainer: true });
   snapDataTableWrapperHeights();
 }
 
@@ -249,7 +247,6 @@ function restoreLayoutAfterPrint() {
   Object.values(chartInstances).forEach(chart => {
     try { chart.resize(); } catch (e) { /* ignore */ }
   });
-  resizePlotlyCharts({ forceRelayout: true, lockToContainer: false });
   snapDataTableWrapperHeights();
 }
 
@@ -276,7 +273,6 @@ if (window.matchMedia) {
 }
 
 window.addEventListener('resize', () => {
-  resizePlotlyCharts();
   snapDataTableWrapperHeights();
 });
 
@@ -650,6 +646,7 @@ function processData(raw) {
       return moyMonthlyMap[key] ?? null;
     })
   ));
+  const { min: moyHeatmapMin, max: moyHeatmapMax } = heatmapMinMax(moyHeatmap);
 
   const weekYearHeatmapYears = Array.from({ length: 5 }, (_, i) => String(currentYear - 4 + i));
   const maxWeekYearWeeks = Math.max(
@@ -678,6 +675,7 @@ function processData(raw) {
     for (let i = currentWeek; i < maxWeekYearWeeks; i++) weekYearTotals[String(currentYear)][i] = null;
   }
   const weekYearHeatmap = weekYearHeatmapYears.map(y => weekYearTotals[y]);
+  const { min: weekYearHeatmapMin, max: weekYearHeatmapMax } = heatmapMinMax(weekYearHeatmap);
 
   return {
     // totals
@@ -693,8 +691,9 @@ function processData(raw) {
     // dom / moy
     domAvg, domMin, domMax, domRecent, domBuckets,
     moyAvg, moyRecent,
-    heatmapYears, moyHeatmap,
+    heatmapYears, moyHeatmap, moyHeatmapMin, moyHeatmapMax,
     weekYearHeatmapYears, weekYearWeekLabels, weekYearHeatmap,
+    weekYearHeatmapMin, weekYearHeatmapMax,
     // yearly
     years, yTotals, yCumulative,
     allYearLabels, barNonCum, barCum,
@@ -728,7 +727,6 @@ function processData(raw) {
 
 // ── Chart factory helpers ─────────────────────────────────
 const chartInstances = {};
-const plotlyChartIds = ['chart-dow', 'chart-dom', 'chart-moy', 'chart-week-year'];
 
 function destroyChart(id) {
   if (chartInstances[id]) {
@@ -773,37 +771,63 @@ function xScale(maxLabels = CONFIG.MAX_X_LABELS) {
   };
 }
 
-function resizePlotlyCharts(forceRelayoutOrOptions = false, lockToContainerArg = false) {
-  const options = typeof forceRelayoutOrOptions === 'object' && forceRelayoutOrOptions !== null
-    ? forceRelayoutOrOptions
-    : { forceRelayout: Boolean(forceRelayoutOrOptions), lockToContainer: lockToContainerArg };
-  const forceRelayout = Boolean(options.forceRelayout);
-  const lockToContainer = Boolean(options.lockToContainer);
+const HEATMAP_COLORS = ['#1f3b77', '#2f7ed8', '#36b1bf', '#f5a623', '#d64545'];
 
-  if (!window.Plotly) return;
-  plotlyChartIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    try {
-      if (forceRelayout) {
-        if (!lockToContainer) {
-          window.Plotly.relayout(el, { autosize: true, width: null, height: null });
-        }
-      }
-      window.Plotly.Plots.resize(el);
-      if (forceRelayout && lockToContainer) {
-        const container = el.closest('.chart-container');
-        if (container) {
-          const width = Math.max(0, Math.floor(container.clientWidth));
-          const height = Math.max(0, Math.floor(container.clientHeight || el.clientHeight));
-          if (width > 0 && height > 0) {
-            window.Plotly.relayout(el, { width, height, autosize: false });
-          }
-        }
-      }
-    } catch (e) { /* ignore */ }
-  });
+function hexToRgb(hex) {
+  const clean = hex.replace('#', '');
+  const num = parseInt(clean, 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
 }
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function lerpColor(a, b, t) {
+  const c1 = hexToRgb(a);
+  const c2 = hexToRgb(b);
+  return `rgb(${Math.round(lerp(c1.r, c2.r, t))},${Math.round(lerp(c1.g, c2.g, t))},${Math.round(lerp(c1.b, c2.b, t))})`;
+}
+
+function heatmapColor(value, min, max) {
+  if (value == null || !isFinite(value)) return 'rgba(0,0,0,0)';
+  if (max <= min) return HEATMAP_COLORS[HEATMAP_COLORS.length - 1];
+  const t = Math.min(1, Math.max(0, (value - min) / (max - min)));
+  const scaled = t * (HEATMAP_COLORS.length - 1);
+  const idx = Math.min(HEATMAP_COLORS.length - 2, Math.floor(scaled));
+  const localT = scaled - idx;
+  return lerpColor(HEATMAP_COLORS[idx], HEATMAP_COLORS[idx + 1], localT);
+}
+
+function heatmapMinMax(matrix) {
+  let min = Infinity;
+  let max = -Infinity;
+  matrix.forEach(row => {
+    row.forEach(v => {
+      if (v == null || !isFinite(v)) return;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    });
+  });
+  if (!isFinite(min)) min = 0;
+  if (!isFinite(max)) max = 0;
+  return { min, max };
+}
+
+function buildMatrixData(xLabels, yLabels, matrix) {
+  const data = [];
+  yLabels.forEach((yLabel, yIdx) => {
+    xLabels.forEach((xLabel, xIdx) => {
+      data.push({ x: xLabel, y: yLabel, v: matrix[yIdx][xIdx] });
+    });
+  });
+  return data;
+}
+
 
 // ── Panel renderers ───────────────────────────────────────
 
@@ -849,126 +873,135 @@ function renderGrowth(d) {
 
 /* 4. Day-of-Week Bar Chart */
 function renderDowChart(d) {
-  if (!window.Plotly) return;
   const colors = getChartThemeColors();
-  const x = [];
-  const y = [];
-  d.dowBuckets.forEach((bucket, i) => {
-    bucket.forEach(v => {
-      x.push(WEEKDAY_LABELS[i]);
-      y.push(v);
-    });
-  });
-  window.Plotly.react('chart-dow', [{
-    type: 'box',
-    x,
-    y,
-    boxpoints: 'suspectedoutliers',
-    jitter: 0.3,
-    whiskerwidth: 0.7,
-    marker: { color: COLORS.amber, size: 3, opacity: 0.5 },
-    line: { color: COLORS.blue, width: 2 },
-    fillcolor: colors.dowFill,
-    hovertemplate: '%{x}<br>%{y:,}<extra></extra>'
-  }], {
-    margin: { l: 50, r: 10, t: 8, b: 40 },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
-    xaxis: {
-      type: 'category',
-      categoryorder: 'array',
-      categoryarray: WEEKDAY_LABELS,
-      tickfont: { color: colors.text }
+  makeChart('chart-dow', {
+    type: 'boxplot',
+    data: {
+      labels: WEEKDAY_LABELS,
+      datasets: [{
+        label: 'Daily Count',
+        data: d.dowBuckets,
+        backgroundColor: colors.dowFill,
+        borderColor: COLORS.blue,
+        borderWidth: 1.5,
+        outlierColor: COLORS.amber,
+        outlierRadius: 3,
+        itemRadius: 0
+      }]
     },
-    yaxis: {
-      tickformat: '~s',
-      gridcolor: colors.grid,
-      zeroline: false,
-      tickfont: { color: colors.text }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: colors.text }
+        },
+        y: {
+          grid: { color: colors.grid },
+          ticks: { callback: v => fmtCompact(v), color: colors.text },
+          title: { display: false }
+        }
+      }
     }
-  }, { responsive: true, displayModeBar: false });
+  });
 }
 
 /* 5. Day-of-Month Bar Chart (last 2 years) */
 function renderDomChart(d) {
-  if (!window.Plotly) return;
   const colors = getChartThemeColors();
-  const x = [];
-  const y = [];
-  d.domBuckets.forEach((bucket, i) => {
-    bucket.forEach(v => {
-      x.push(String(i + 1));
-      y.push(v);
-    });
-  });
-  window.Plotly.react('chart-dom', [{
-    type: 'box',
-    x,
-    y,
-    boxpoints: false,
-    whiskerwidth: 0.6,
-    line: { color: COLORS.teal, width: 1.5 },
-    fillcolor: colors.domFill,
-    hovertemplate: 'Day %{x}<br>%{y:,}<extra></extra>'
-  }], {
-    margin: { l: 50, r: 10, t: 8, b: 40 },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
-    xaxis: {
-      type: 'category',
-      tickmode: 'array',
-      tickvals: ['1', '5', '10', '15', '20', '25', '31'],
-      tickfont: { color: colors.text }
+  makeChart('chart-dom', {
+    type: 'boxplot',
+    data: {
+      labels: Array.from({ length: 31 }, (_, i) => String(i + 1)),
+      datasets: [{
+        label: 'Daily Count',
+        data: d.domBuckets,
+        backgroundColor: colors.domFill,
+        borderColor: COLORS.teal,
+        borderWidth: 1.5,
+        outlierColor: COLORS.amber,
+        outlierRadius: 2,
+        itemRadius: 0
+      }]
     },
-    yaxis: {
-      tickformat: '~s',
-      gridcolor: colors.grid,
-      zeroline: false,
-      tickfont: { color: colors.text }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: colors.text,
+            callback: function(value) {
+              const label = this.getLabelForValue(value);
+              return ['1', '5', '10', '15', '20', '25', '31'].includes(label) ? label : '';
+            }
+          }
+        },
+        y: {
+          grid: { color: colors.grid },
+          ticks: { callback: v => fmtCompact(v), color: colors.text },
+          title: { display: false }
+        }
+      }
     }
-  }, { responsive: true, displayModeBar: false });
+  });
 }
 
 /* 6. Month-of-Year Bar Chart (last 5 years) */
 function renderMoyChart(d) {
-  if (!window.Plotly) return;
   const colors = getChartThemeColors();
-  window.Plotly.react('chart-moy', [{
-    type: 'heatmap',
-    x: MONTH_LABELS,
-    y: d.heatmapYears,
-    z: d.moyHeatmap,
-    colorscale: [
-      [0, '#1f3b77'],
-      [0.35, '#2f7ed8'],
-      [0.6, '#36b1bf'],
-      [0.8, '#f5a623'],
-      [1, '#d64545']
-    ],
-    xgap: 2,
-    ygap: 2,
-    colorbar: {
-      title: 'Count',
-      tickformat: '~s',
-      tickfont: { color: colors.text },
-      titlefont: { color: colors.text }
+  const data = buildMatrixData(MONTH_LABELS, d.heatmapYears, d.moyHeatmap);
+  makeChart('chart-moy', {
+    type: 'matrix',
+    data: {
+      datasets: [{
+        label: 'Monthly Total',
+        data,
+        backgroundColor: ctx => heatmapColor(ctx.raw?.v, d.moyHeatmapMin, d.moyHeatmapMax),
+        borderColor: colors.border,
+        borderWidth: 1,
+        width: ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? Math.max(0, area.width / MONTH_LABELS.length - 2) : 0;
+        },
+        height: ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? Math.max(0, area.height / d.heatmapYears.length - 2) : 0;
+        }
+      }]
     },
-    hovertemplate: '%{y} %{x}<br>%{z:,}<extra></extra>'
-  }], {
-    margin: { l: 60, r: 30, t: 8, b: 35 },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
-    xaxis: {
-      tickfont: { color: colors.text }
-    },
-    yaxis: {
-      autorange: 'reversed',
-      tickfont: { color: colors.text }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => `${ctx[0].raw.y} ${ctx[0].raw.x}`,
+            label: ctx => ` ${fmt(ctx.raw.v)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          labels: MONTH_LABELS,
+          offset: true,
+          grid: { display: false },
+          ticks: { color: colors.text }
+        },
+        y: {
+          type: 'category',
+          labels: d.heatmapYears,
+          offset: true,
+          reverse: true,
+          grid: { display: false },
+          ticks: { color: colors.text }
+        }
+      }
     }
-  }, { responsive: true, displayModeBar: false });
+  });
 }
 
 /* 7. Cumulative Yearly Chart */
@@ -1016,44 +1049,57 @@ function renderCumulativeChart(d) {
 
 /* Week/Year Heatmap Chart (last 5 years) */
 function renderWeekYearHeatmapChart(d) {
-  if (!window.Plotly) return;
   const colors = getChartThemeColors();
-  window.Plotly.react('chart-week-year', [{
-    type: 'heatmap',
-    x: d.weekYearWeekLabels,
-    y: d.weekYearHeatmapYears,
-    z: d.weekYearHeatmap,
-    colorscale: [
-      [0, '#1f3b77'],
-      [0.35, '#2f7ed8'],
-      [0.6, '#36b1bf'],
-      [0.8, '#f5a623'],
-      [1, '#d64545']
-    ],
-    xgap: 1,
-    ygap: 2,
-    colorbar: {
-      title: 'Count',
-      tickformat: '~s',
-      tickfont: { color: colors.text },
-      titlefont: { color: colors.text }
+  const data = buildMatrixData(d.weekYearWeekLabels, d.weekYearHeatmapYears, d.weekYearHeatmap);
+  makeChart('chart-week-year', {
+    type: 'matrix',
+    data: {
+      datasets: [{
+        label: 'Weekly Total',
+        data,
+        backgroundColor: ctx => heatmapColor(ctx.raw?.v, d.weekYearHeatmapMin, d.weekYearHeatmapMax),
+        borderColor: colors.border,
+        borderWidth: 1,
+        width: ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? Math.max(0, area.width / d.weekYearWeekLabels.length - 1) : 0;
+        },
+        height: ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? Math.max(0, area.height / d.weekYearHeatmapYears.length - 2) : 0;
+        }
+      }]
     },
-    hovertemplate: '%{y} %{x}<br>%{z:,}<extra></extra>'
-  }], {
-    margin: { l: 60, r: 30, t: 8, b: 35 },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    font: { color: colors.text, family: "'Segoe UI', system-ui, sans-serif", size: 11 },
-    xaxis: {
-      tickmode: 'array',
-      tickvals: d.weekYearWeekLabels.filter((_, i) => i % 4 === 0),
-      tickfont: { color: colors.text }
-    },
-    yaxis: {
-      autorange: 'reversed',
-      tickfont: { color: colors.text }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => `${ctx[0].raw.y} ${ctx[0].raw.x}`,
+            label: ctx => ` ${fmt(ctx.raw.v)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          labels: d.weekYearWeekLabels,
+          offset: true,
+          grid: { display: false },
+          ticks: { color: colors.text, maxTicksLimit: 14 }
+        },
+        y: {
+          type: 'category',
+          labels: d.weekYearHeatmapYears,
+          offset: true,
+          reverse: true,
+          grid: { display: false },
+          ticks: { color: colors.text }
+        }
+      }
     }
-  }, { responsive: true, displayModeBar: false });
+  });
 }
 
 /* 8. Cumulative Yearly Table */

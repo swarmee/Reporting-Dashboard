@@ -31,7 +31,8 @@ Reporting-Dashboard/
 │   │   └── style.css           # Theme variables (light default, dark toggle) + print media query
 │   └── js/
 │       ├── chart.umd.min.js    # Chart.js v4.5.1 (bundled, no CDN needed)
-│       ├── plotly-cartesian-2.35.2.min.js # Plotly.js cartesian bundle (boxplot + heatmap)
+│       ├── chartjs-chart-boxplot.min.js # Chart.js boxplot plugin (day-of-week/day-of-month)
+│       ├── chartjs-chart-matrix.min.js  # Chart.js matrix plugin (heatmaps)
 │       └── dashboard.js        # All data-fetching, processing & chart logic
 ├── serve.py                    # Local dev server — serves static files AND
 │                               #   a synthetic mock of the reporting API
@@ -45,9 +46,10 @@ Reporting-Dashboard/
 |------|---------|
 | `index.html` | Defines the two-column grid layout, all panel skeletons, and links to assets. |
 | `assets/css/style.css` | CSS custom-properties themes (light by default, plus dark and Ukraine via toggle). `@media print` block preserves dashboard colours in PDF output via `print-color-adjust: exact`. |
-| `assets/js/dashboard.js` | Fetches data from the API, performs all calculations (totals, stats, regressions, moving averages), and renders all dashboard charts/tables (Chart.js + Plotly). |
+| `assets/js/dashboard.js` | Fetches data from the API, performs all calculations (totals, stats, regressions, moving averages), and renders all dashboard charts/tables (Chart.js + boxplot + matrix plugins). |
 | `assets/js/chart.umd.min.js` | Chart.js v4.5.1 UMD bundle — **no internet required**. |
-| `assets/js/plotly-cartesian-2.35.2.min.js` | Plotly.js v2.35.2 cartesian bundle for professional boxplot and heatmap visualisations — **no internet required**. |
+| `assets/js/chartjs-chart-boxplot.min.js` | Chart.js boxplot plugin bundle — **no internet required**. |
+| `assets/js/chartjs-chart-matrix.min.js` | Chart.js matrix (heatmap) plugin bundle — **no internet required**. |
 | `serve.py` | Python 3 HTTP server.  Serves static files via `http.server.SimpleHTTPRequestHandler` and intercepts `GET /v1/reporting` to return synthetic historical data (1970–today, ~2.5 B total). |
 
 ---
