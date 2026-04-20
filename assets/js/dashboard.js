@@ -512,19 +512,19 @@ function processData(raw) {
   });
 
   // ── Daily heatmap (last 12 months) ───────────────────────
-  const dailyYearStart = last365Start;
+  const dailyLast365Start = last365Start;
   const dailyYearMap = Object.fromEntries(last365.map(r => [r.date, r.count]));
   const dailyYearDates = [];
   const dailyYearCounts = [];
-  for (let date = dailyYearStart; date <= today; date = addDays(date, 1)) {
+  for (let date = dailyLast365Start; date <= today; date = addDays(date, 1)) {
     dailyYearDates.push(date);
     dailyYearCounts.push(dailyYearMap[date] ?? 0);
   }
 
   const dailyYearHeatmapMonths = [];
-  let monthCursor = dailyYearStart.slice(0, 7);
-  const dailyYearEndMonth = today.slice(0, 7);
-  while (monthCursor <= dailyYearEndMonth) {
+  let monthCursor = dailyLast365Start.slice(0, 7);
+  const dailyLast365EndMonth = today.slice(0, 7);
+  while (monthCursor <= dailyLast365EndMonth) {
     dailyYearHeatmapMonths.push(monthCursor);
     monthCursor = addMonths(monthCursor, 1);
   }
@@ -536,7 +536,7 @@ function processData(raw) {
       const day = idx + 1;
       if (day > daysInMonth) return null;
       const date = `${ym}-${String(day).padStart(2, '0')}`;
-      if (date < dailyYearStart || date > today) return null;
+      if (date < dailyLast365Start || date > today) return null;
       return dailyYearMap[date] ?? 0;
     });
   });
