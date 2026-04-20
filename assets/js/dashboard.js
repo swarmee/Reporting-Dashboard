@@ -1571,7 +1571,7 @@ function syncChartPanelsToTables() {
     }
 
     if (chartContainer) {
-      const currentHeight = Math.round(parseFloat(chartContainer.style.height || 0));
+      const currentHeight = Math.round(parseFloat(getComputedStyle(chartContainer).height));
       const nextHeight = Math.round(targetHeight);
       if (currentHeight !== nextHeight) {
         chartContainer.style.height = `${targetHeight}px`;
@@ -1607,15 +1607,19 @@ function syncChartPanelsToTables() {
     }
   });
 
-  resizedChartIds.forEach(chartId => {
-    const chart = chartInstances[chartId];
-    if (!chart) return;
-    try {
-      chart.resize();
-    } catch (e) {
-      console.warn('[ROGI] Chart resize failed for chart:', chartId, e);
-    }
-  });
+  if (resizedChartIds.size) {
+    requestAnimationFrame(() => {
+      resizedChartIds.forEach(chartId => {
+        const chart = chartInstances[chartId];
+        if (!chart) return;
+        try {
+          chart.resize();
+        } catch (e) {
+          console.warn('[ROGI] Chart resize failed for chart:', chartId, e);
+        }
+      });
+    });
+  }
 }
 
 /* 19. Pie Chart – total reporting per year */
