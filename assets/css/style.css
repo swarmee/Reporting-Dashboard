@@ -438,12 +438,8 @@ body {
 .chart-container canvas {
   display: block;
   max-width: 100%;
-}
-
-.plotly-chart {
   width: 100%;
   height: 100%;
-  min-height: 240px;
 }
 
 /* ── Data Tables (Yearly / Weekly / Monthly) ─────────────── */
@@ -586,11 +582,10 @@ body {
 
 /* ────────────────────────────────────────────────────────────
    PRINT / PDF STYLES
-   print-color-adjust: exact  →  preserves backgrounds & colours
    ──────────────────────────────────────────────────────────── */
 @media print {
   @page {
-    size: A3 landscape;
+    size: landscape;
     margin: 10mm 8mm;
   }
 
@@ -604,53 +599,17 @@ body {
   #loading-overlay,
   #error-overlay { display: none !important; }
 
-  .dashboard-header {
-    position: relative !important;
-    break-after: avoid;
-  }
-
   .dashboard-main {
-    padding: 6px 0;
-    gap: 8px;
     display: grid;
     grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px 24px 40px;
   }
 
   .panel {
     break-inside: avoid;
     page-break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid var(--border) !important;
-    overflow: hidden;
   }
 
-  .panel-full { grid-column: 1 / -1; break-inside: avoid; }
-
-  .panel-body { min-width: 0; }
-
-  .chart-container {
-    min-height: 200px;
-    height: 240px;
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  .plotly-chart,
-  .plotly-chart > div,
-  .plotly-chart .js-plotly-plot,
-  .plotly-chart .plot-container,
-  .plotly-chart .svg-container {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 100% !important;
-  }
-
-  .data-table-wrapper { overflow: hidden !important; }
-
-  .panel-expand-btn { display: none; }
-
-  .pie-chart-container { flex-wrap: nowrap; }
-
-  .pie-legend { max-height: none; overflow: visible; }
+  .panel-full { grid-column: 1 / -1; }
 }
