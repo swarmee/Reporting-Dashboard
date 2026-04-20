@@ -594,22 +594,7 @@ body {
     print-color-adjust: exact !important;
   }
 
-  body {
-    background: var(--bg-body) !important;
-  }
-
-  @supports (zoom: 1) {
-    body { zoom: 0.7; }
-  }
-
-  @supports not (zoom: 1) {
-    body {
-      transform: scale(0.7);
-      transform-origin: top left;
-      width: calc(100% / 0.7);
-      height: calc(100% / 0.7);
-    }
-  }
+  body { background: var(--bg-body) !important; }
 
   #loading-overlay,
   #error-overlay { display: none !important; }

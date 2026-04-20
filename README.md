@@ -220,8 +220,8 @@ Open the dashboard in your browser, then use **File → Print** (or
 `Ctrl + P` / `⌘ + P`) and choose **Save as PDF**.
 
 Print formatting keeps the dashboard in **landscape** with **two panels per
-row** and scales the output to **70%** of the on-screen size so two rows fit
-per page. If your browser omits background colors by default, enable
+row**, matching the on-screen layout as closely as possible without any chart
+resizing. If your browser omits background colors by default, enable
 **Background graphics** in the print dialog to preserve chart fills.
 
 ---
