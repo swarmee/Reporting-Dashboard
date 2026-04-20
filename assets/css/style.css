@@ -31,12 +31,14 @@
   --panel-body-padding-y: 16px;
   --panel-body-padding-x: 18px;
   --table-row-border-width: 1px;
-  --table-cell-padding-y: 4px;
-  --table-header-padding-y: 4px;
-  --table-row-content-height: 22px;
-  --table-header-content-height: 24px;
-  --table-row-total-height: calc(var(--table-row-content-height) + (2 * var(--table-cell-padding-y)));
-  --table-header-total-height: calc(var(--table-header-content-height) + (2 * var(--table-header-padding-y)));
+  --table-row-font-size: .82rem;
+  --table-header-font-size: .72rem;
+  --table-row-line-height: 1.2;
+  --table-header-line-height: 1.2;
+  --table-cell-padding-y: 7px;
+  --table-header-padding-y: 8px;
+  --table-row-total-height: calc((var(--table-row-line-height) * var(--table-row-font-size)) + (2 * var(--table-cell-padding-y)));
+  --table-header-total-height: calc((var(--table-header-line-height) * var(--table-header-font-size)) + (2 * var(--table-header-padding-y)));
   --table-10-rows-total-height: calc(var(--table-header-total-height) + (10 * var(--table-row-total-height)) + (10 * var(--table-row-border-width)));
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -471,13 +473,12 @@ body {
 .data-table th {
   background: var(--bg-card-alt);
   color: var(--text-muted);
-  font-size: .72rem;
+  font-size: var(--table-header-font-size);
   text-transform: uppercase;
   letter-spacing: .08em;
   font-weight: 600;
   padding: var(--table-header-padding-y) 12px;
-  min-height: var(--table-header-content-height);
-  line-height: 1.4;
+  line-height: var(--table-header-line-height);
   vertical-align: middle;
   text-align: right;
   border-bottom: var(--table-row-border-width) solid var(--border-light);
@@ -488,13 +489,12 @@ body {
 
 .data-table td {
   padding: var(--table-cell-padding-y) 12px;
-  min-height: var(--table-row-content-height);
-  line-height: 1.4;
+  line-height: var(--table-row-line-height);
   vertical-align: middle;
   text-align: right;
   border-bottom: var(--table-row-border-width) solid var(--border);
   font-family: var(--font-mono);
-  font-size: .82rem;
+  font-size: var(--table-row-font-size);
   color: var(--text-primary);
   white-space: nowrap;
 }
