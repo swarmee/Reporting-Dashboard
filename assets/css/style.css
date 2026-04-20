@@ -31,10 +31,12 @@
   --panel-body-padding-y: 16px;
   --panel-body-padding-x: 18px;
   --table-row-border-width: 1px;
-  --table-row-total-height: 30px;
-  --table-header-total-height: 32px;
   --table-cell-padding-y: 4px;
   --table-header-padding-y: 4px;
+  --table-row-content-height: 22px;
+  --table-header-content-height: 24px;
+  --table-row-total-height: calc(var(--table-row-content-height) + (2 * var(--table-cell-padding-y)));
+  --table-header-total-height: calc(var(--table-header-content-height) + (2 * var(--table-header-padding-y)));
   --table-10-rows-total-height: calc(var(--table-header-total-height) + (10 * var(--table-row-total-height)) + (10 * var(--table-row-border-width)));
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -474,7 +476,7 @@ body {
   letter-spacing: .08em;
   font-weight: 600;
   padding: var(--table-header-padding-y) 12px;
-  min-height: calc(var(--table-header-total-height) - (2 * var(--table-header-padding-y)));
+  min-height: var(--table-header-content-height);
   line-height: 1.4;
   vertical-align: middle;
   text-align: right;
@@ -486,7 +488,7 @@ body {
 
 .data-table td {
   padding: var(--table-cell-padding-y) 12px;
-  min-height: calc(var(--table-row-total-height) - (2 * var(--table-cell-padding-y)));
+  min-height: var(--table-row-content-height);
   line-height: 1.4;
   vertical-align: middle;
   text-align: right;
