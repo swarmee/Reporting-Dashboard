@@ -28,6 +28,12 @@
   --shadow:        0 4px 20px rgba(0,0,0,.45);
   --shadow-sm:     0 2px 8px  rgba(0,0,0,.30);
 
+  --panel-body-padding-y: 16px;
+  --panel-body-padding-x: 18px;
+  --table-row-height: 30px;
+  --table-header-height: 32px;
+  --panel-row-body-height: calc(var(--table-header-height) + (10 * var(--table-row-height)));
+
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
 }
@@ -294,7 +300,7 @@ body {
 }
 
 .panel-body {
-  padding: 16px 18px;
+  padding: var(--panel-body-padding-y) var(--panel-body-padding-x);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -432,7 +438,7 @@ body {
 .chart-container {
   position: relative;
   flex: 1;
-  min-height: 240px;
+  min-height: calc(var(--panel-row-body-height) - (2 * var(--panel-body-padding-y)));
 }
 
 .chart-container canvas {
@@ -445,7 +451,7 @@ body {
 /* ── Data Tables (Yearly / Weekly / Monthly) ─────────────── */
 .data-table-wrapper {
   overflow-y: auto;
-  max-height: 340px;
+  max-height: var(--panel-row-body-height);
   flex: 1;
 }
 
@@ -464,7 +470,9 @@ body {
   text-transform: uppercase;
   letter-spacing: .08em;
   font-weight: 600;
-  padding: 8px 12px;
+  padding: 0 12px;
+  height: var(--table-header-height);
+  line-height: var(--table-header-height);
   text-align: right;
   border-bottom: 1px solid var(--border-light);
   white-space: nowrap;
@@ -473,7 +481,9 @@ body {
 .data-table th:first-child { text-align: left; }
 
 .data-table td {
-  padding: 7px 12px;
+  padding: 0 12px;
+  height: var(--table-row-height);
+  line-height: var(--table-row-height);
   text-align: right;
   border-bottom: 1px solid var(--border);
   font-family: var(--font-mono);
@@ -516,6 +526,7 @@ body {
   align-items: flex-start;
   flex-wrap: wrap;
   flex: 1;
+  min-height: calc(var(--panel-row-body-height) - (2 * var(--panel-body-padding-y)));
 }
 
 .pie-canvas-wrap {
@@ -529,7 +540,7 @@ body {
   flex: 1;
   min-width: 180px;
   overflow-y: auto;
-  max-height: 340px;
+  max-height: var(--panel-row-body-height);
 }
 
 .pie-legend-item {
