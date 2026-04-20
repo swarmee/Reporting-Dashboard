@@ -1534,8 +1534,9 @@ function resetChartPanelSizing(panel) {
 function syncChartPanelsToTables() {
   const panels = Array.from(document.querySelectorAll('.panel'));
   const fullscreenPanel = document.fullscreenElement || document.webkitFullscreenElement;
+  const resizedChartIds = new Set();
 
-  panels.forEach((panel, index) => {
+  panels.forEach(panel => {
     const chartContainer = panel.querySelector('.chart-container');
     const pieContainer = panel.querySelector('.pie-chart-container');
     if (!chartContainer && !pieContainer) return;
@@ -1545,9 +1546,8 @@ function syncChartPanelsToTables() {
       return;
     }
 
-    const tablePanel = panels
-      .slice(index + 1)
-      .find(nextPanel => nextPanel.querySelector('.data-table-wrapper'));
+    const nextPanel = panel.nextElementSibling;
+    const tablePanel = nextPanel && nextPanel.querySelector('.data-table-wrapper') ? nextPanel : null;
     if (!tablePanel) {
       resetChartPanelSizing(panel);
       return;
@@ -1571,9 +1571,15 @@ function syncChartPanelsToTables() {
     }
 
     if (chartContainer) {
-      chartContainer.style.height = `${targetHeight}px`;
-      chartContainer.style.minHeight = '0';
-      chartContainer.style.maxHeight = `${targetHeight}px`;
+      const currentHeight = Math.round(parseFloat(chartContainer.style.height || 0));
+      const nextHeight = Math.round(targetHeight);
+      if (currentHeight !== nextHeight) {
+        chartContainer.style.height = `${targetHeight}px`;
+        chartContainer.style.minHeight = '0';
+        chartContainer.style.maxHeight = `${targetHeight}px`;
+        const chartCanvas = chartContainer.querySelector('canvas');
+        if (chartCanvas?.id) resizedChartIds.add(chartCanvas.id);
+      }
     }
 
     if (pieContainer) {
@@ -1583,7 +1589,8 @@ function syncChartPanelsToTables() {
 
       const pieWrap = panel.querySelector('.pie-canvas-wrap');
       if (pieWrap) {
-        const pieSize = Math.min(CONFIG.MAX_PIE_CHART_SIZE, targetHeight);
+        const availableWidth = pieContainer.clientWidth || CONFIG.MAX_PIE_CHART_SIZE;
+        const pieSize = Math.min(CONFIG.MAX_PIE_CHART_SIZE, targetHeight, availableWidth);
         pieWrap.style.width = `${pieSize}px`;
         pieWrap.style.height = `${pieSize}px`;
       }
@@ -1592,10 +1599,15 @@ function syncChartPanelsToTables() {
       if (legend) {
         legend.style.maxHeight = `${targetHeight}px`;
       }
+
+      const pieCanvas = pieContainer.querySelector('canvas');
+      if (pieCanvas?.id) resizedChartIds.add(pieCanvas.id);
     }
   });
 
-  Object.values(chartInstances).forEach(chart => {
+  resizedChartIds.forEach(chartId => {
+    const chart = chartInstances[chartId];
+    if (!chart) return;
     try {
       chart.resize();
     } catch (e) {
