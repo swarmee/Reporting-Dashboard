@@ -1500,6 +1500,103 @@ function snapDataTableWrapperHeights() {
     );
     wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
+  syncChartPanelsToTables();
+}
+
+function resetChartPanelSizing(panel) {
+  const chartContainer = panel.querySelector('.chart-container');
+  if (chartContainer) {
+    chartContainer.style.removeProperty('height');
+    chartContainer.style.removeProperty('min-height');
+    chartContainer.style.removeProperty('max-height');
+  }
+
+  const pieContainer = panel.querySelector('.pie-chart-container');
+  if (pieContainer) {
+    pieContainer.style.removeProperty('height');
+    pieContainer.style.removeProperty('min-height');
+    pieContainer.style.removeProperty('max-height');
+  }
+
+  const pieWrap = panel.querySelector('.pie-canvas-wrap');
+  if (pieWrap) {
+    pieWrap.style.removeProperty('width');
+    pieWrap.style.removeProperty('height');
+  }
+
+  const legend = panel.querySelector('.pie-legend');
+  if (legend) {
+    legend.style.removeProperty('max-height');
+  }
+}
+
+function syncChartPanelsToTables() {
+  const panels = Array.from(document.querySelectorAll('.panel'));
+  const fullscreenPanel = document.fullscreenElement || document.webkitFullscreenElement;
+
+  panels.forEach((panel, index) => {
+    const chartContainer = panel.querySelector('.chart-container');
+    const pieContainer = panel.querySelector('.pie-chart-container');
+    if (!chartContainer && !pieContainer) return;
+
+    if (fullscreenPanel && panel === fullscreenPanel) {
+      resetChartPanelSizing(panel);
+      return;
+    }
+
+    const tablePanel = panels
+      .slice(index + 1)
+      .find(nextPanel => nextPanel.querySelector('.data-table-wrapper'));
+    if (!tablePanel) {
+      resetChartPanelSizing(panel);
+      return;
+    }
+
+    const wrapper = tablePanel.querySelector('.data-table-wrapper');
+    const wrapperHeight = wrapper ? wrapper.getBoundingClientRect().height : 0;
+    if (!(wrapperHeight > 0)) {
+      resetChartPanelSizing(panel);
+      return;
+    }
+
+    const panelBody = panel.querySelector('.panel-body');
+    if (!panelBody) return;
+    const bodyStyles = getComputedStyle(panelBody);
+    const padding = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
+    const targetHeight = wrapperHeight - padding;
+    if (!(targetHeight > 0)) {
+      resetChartPanelSizing(panel);
+      return;
+    }
+
+    if (chartContainer) {
+      chartContainer.style.height = `${targetHeight}px`;
+      chartContainer.style.minHeight = '0';
+      chartContainer.style.maxHeight = `${targetHeight}px`;
+    }
+
+    if (pieContainer) {
+      pieContainer.style.height = `${targetHeight}px`;
+      pieContainer.style.minHeight = '0';
+      pieContainer.style.maxHeight = `${targetHeight}px`;
+
+      const pieWrap = panel.querySelector('.pie-canvas-wrap');
+      if (pieWrap) {
+        const pieSize = Math.min(320, targetHeight);
+        pieWrap.style.width = `${pieSize}px`;
+        pieWrap.style.height = `${pieSize}px`;
+      }
+
+      const legend = panel.querySelector('.pie-legend');
+      if (legend) {
+        legend.style.maxHeight = `${targetHeight}px`;
+      }
+    }
+  });
+
+  Object.values(chartInstances).forEach(chart => {
+    try { chart.resize(); } catch (e) { /* ignore */ }
+  });
 }
 
 /* 19. Pie Chart – total reporting per year */
