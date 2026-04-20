@@ -1492,6 +1492,7 @@ function snapDataTableWrapperHeights() {
     if (!(headerHeight > 0 && rowHeight > 0)) return;
 
     const availableHeight = baseMaxHeight - headerHeight;
+    if (availableHeight <= 0) return;
     const visibleRows = Math.max(1, Math.floor(availableHeight / rowHeight));
     wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
