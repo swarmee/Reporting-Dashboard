@@ -238,6 +238,9 @@ document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 window.addEventListener('resize', () => {
   snapDataTableWrapperHeights();
 });
+window.addEventListener('beforeprint', () => {
+  snapDataTableWrapperHeights();
+});
 
 // ── Data processing ───────────────────────────────────────
 function processData(raw) {
@@ -1465,20 +1468,35 @@ function snapDataTableWrapperHeights() {
     const bodyRow = table?.querySelector('tbody tr');
     if (!headRow || !bodyRow) return;
 
-    if (!wrapper.dataset.baseMaxHeight) {
-      const computedMaxHeight = getComputedStyle(wrapper).maxHeight;
-      if (computedMaxHeight === 'none') return;
-      const baseMaxHeight = parseFloat(computedMaxHeight);
-      if (!Number.isFinite(baseMaxHeight) || baseMaxHeight <= 0) return;
-      wrapper.dataset.baseMaxHeight = String(baseMaxHeight);
+    let baseMaxHeight = 0;
+    const panelBody = wrapper.closest('.panel-body');
+    if (panelBody) {
+      const bodyStyles = getComputedStyle(panelBody);
+      const paddingY = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
+      baseMaxHeight = panelBody.clientHeight - paddingY;
     }
 
-    const baseMaxHeight = Number(wrapper.dataset.baseMaxHeight);
+    if (!(baseMaxHeight > 0)) {
+      if (!wrapper.dataset.baseMaxHeight) {
+        const computedMaxHeight = getComputedStyle(wrapper).maxHeight;
+        if (computedMaxHeight !== 'none') {
+          const parsedMaxHeight = parseFloat(computedMaxHeight);
+          if (Number.isFinite(parsedMaxHeight) && parsedMaxHeight > 0) {
+            wrapper.dataset.baseMaxHeight = String(parsedMaxHeight);
+          }
+        }
+      }
+      baseMaxHeight = Number(wrapper.dataset.baseMaxHeight);
+    }
+
+    if (!(baseMaxHeight > 0)) return;
     const headerHeight = Math.ceil(headRow.getBoundingClientRect().height);
     const rowHeight = Math.ceil(bodyRow.getBoundingClientRect().height);
-    if (!(baseMaxHeight > 0 && headerHeight > 0 && rowHeight > 0)) return;
+    if (!(headerHeight > 0 && rowHeight > 0)) return;
 
-    const visibleRows = Math.max(1, Math.floor((baseMaxHeight - headerHeight) / rowHeight));
+    const availableHeight = baseMaxHeight - headerHeight;
+    if (availableHeight < rowHeight) return;
+    const visibleRows = Math.max(1, Math.floor(availableHeight / rowHeight));
     wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
 }
