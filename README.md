@@ -110,6 +110,8 @@ The dashboard uses a **two-panel-per-row** layout throughout.
 | 20 | **Month/Year Reporting — Last 5 Years — Table** | Tabular month-by-month totals by year (same data as heatmap) |
 | 21 | **Week/Year Reporting Heatmap — Last 5 Years** | Heatmap of weekly totals by year and week |
 | 22 | **Week/Year Reporting — Last 5 Years — Table** | Tabular weekly totals by year (same data as heatmap) |
+| 23 | **Daily Reporting Heatmap — Last 12 Months** | Heatmap of daily counts by month (rows) and day of month (columns) |
+| 24 | **Daily Reporting Table — Last 12 Months** | Daily counts for the last 12 months (Date + Count) |
 
 **Linear regression** uses the last 8 full calendar years (excluding the
 current year) as the training set and predicts the current year and the next

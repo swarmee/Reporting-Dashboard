@@ -511,6 +511,37 @@ function processData(raw) {
     return arrMean(daily60Vals.slice(start, i + 1));
   });
 
+  // ── Daily heatmap (last 12 months) ───────────────────────
+  const dailyYearStart = last365Start;
+  const dailyYearMap = Object.fromEntries(last365.map(r => [r.date, r.count]));
+  const dailyYearDates = [];
+  const dailyYearCounts = [];
+  for (let date = dailyYearStart; date <= today; date = addDays(date, 1)) {
+    dailyYearDates.push(date);
+    dailyYearCounts.push(dailyYearMap[date] ?? 0);
+  }
+
+  const dailyYearHeatmapMonths = [];
+  let monthCursor = dailyYearStart.slice(0, 7);
+  const dailyYearEndMonth = today.slice(0, 7);
+  while (monthCursor <= dailyYearEndMonth) {
+    dailyYearHeatmapMonths.push(monthCursor);
+    monthCursor = addMonths(monthCursor, 1);
+  }
+  const dailyYearHeatmapDays = Array.from({ length: 31 }, (_, i) => String(i + 1));
+  const dailyYearHeatmap = dailyYearHeatmapMonths.map(ym => {
+    const [y, m] = ym.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    return dailyYearHeatmapDays.map((_, idx) => {
+      const day = idx + 1;
+      if (day > daysInMonth) return null;
+      const date = `${ym}-${String(day).padStart(2, '0')}`;
+      if (date < dailyYearStart || date > today) return null;
+      return dailyYearMap[date] ?? 0;
+    });
+  });
+  const { min: dailyYearHeatmapMin, max: dailyYearHeatmapMax } = heatmapMinMax(dailyYearHeatmap);
+
   // ── Weekly (last 2 years) ──────────────────────────────
   const weekMap = {};
   records
@@ -720,6 +751,10 @@ function processData(raw) {
     daily60AllLabels, daily60BarData, daily60RegLine, daily60MA,
     daily60Keys, daily60Vals,
     n60, daily60ForecastDates,
+    // daily heatmap (last 12 months)
+    dailyYearDates, dailyYearCounts,
+    dailyYearHeatmapMonths, dailyYearHeatmapDays, dailyYearHeatmap,
+    dailyYearHeatmapMin, dailyYearHeatmapMax,
     // weekly
     weekAllKeys, weekBarData, weekRegLine, weekBestFit,
     weekKeys, weekVals, weekForecastKeys,
@@ -1258,6 +1293,86 @@ function renderDaily60Table(d) {
   });
 }
 
+/* Daily Heatmap Chart (last 12 months) */
+function renderDailyYearHeatmapChart(d) {
+  const colors = getChartThemeColors();
+  const data = buildMatrixData(d.dailyYearHeatmapDays, d.dailyYearHeatmapMonths, d.dailyYearHeatmap);
+  makeChart('chart-daily-heatmap-year', {
+    type: 'matrix',
+    data: {
+      datasets: [{
+        label: 'Daily Count',
+        data,
+        backgroundColor: ctx => heatmapColor(ctx.raw?.v, d.dailyYearHeatmapMin, d.dailyYearHeatmapMax),
+        borderColor: colors.border,
+        borderWidth: 1,
+        width: ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? Math.max(0, area.width / d.dailyYearHeatmapDays.length - 1) : 0;
+        },
+        height: ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? Math.max(0, area.height / d.dailyYearHeatmapMonths.length - 2) : 0;
+        }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => {
+              const day = String(ctx[0].raw.x).padStart(2, '0');
+              return `${ctx[0].raw.y}-${day}`;
+            },
+            label: ctx => ` ${fmt(ctx.raw.v)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          labels: d.dailyYearHeatmapDays,
+          offset: true,
+          grid: { display: false },
+          ticks: {
+            color: colors.text,
+            callback: function(value) {
+              const label = this.getLabelForValue(value);
+              return ['1', '5', '10', '15', '20', '25', '31'].includes(label) ? label : '';
+            }
+          }
+        },
+        y: {
+          type: 'category',
+          labels: d.dailyYearHeatmapMonths,
+          offset: true,
+          reverse: true,
+          grid: { display: false },
+          ticks: { color: colors.text }
+        }
+      }
+    }
+  });
+}
+
+/* Daily Table (last 12 months) */
+function renderDailyYearTable(d) {
+  const tbody = document.getElementById('tbody-daily-year');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  [...d.dailyYearDates].reverse().forEach((date, revI) => {
+    const i = d.dailyYearDates.length - 1 - revI;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${date}</td>
+      <td>${fmt(d.dailyYearCounts[i])}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 /* 13. Weekly Chart (last 2 years) */
 function renderWeeklyChart(d) {
   makeChart('chart-weekly', {
@@ -1654,6 +1769,7 @@ function toggleTheme() {
     renderCumulativeChart(window._dashData);
     renderNonCumChart(window._dashData);
     renderDaily60Chart(window._dashData);
+    renderDailyYearHeatmapChart(window._dashData);
     renderWeeklyChart(window._dashData);
     renderWeeklyCumulativeComparisonChart(window._dashData);
     renderMonthlyChart(window._dashData);
@@ -1704,6 +1820,8 @@ async function init() {
     renderNonCumTable(data);
     renderDaily60Chart(data);
     renderDaily60Table(data);
+    renderDailyYearHeatmapChart(data);
+    renderDailyYearTable(data);
     renderWeeklyChart(data);
     renderWeeklyTable(data);
     renderWeeklyCumulativeComparisonChart(data);
