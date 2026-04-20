@@ -1472,8 +1472,8 @@ function snapDataTableWrapperHeights() {
     const panelBody = wrapper.closest('.panel-body');
     if (panelBody) {
       const bodyStyles = getComputedStyle(panelBody);
-      const paddingY = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
-      baseMaxHeight = panelBody.clientHeight - paddingY;
+      const totalVerticalPadding = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
+      baseMaxHeight = panelBody.clientHeight - totalVerticalPadding;
     }
 
     if (!(baseMaxHeight > 0)) {
@@ -1495,8 +1495,7 @@ function snapDataTableWrapperHeights() {
     if (!(headerHeight > 0 && rowHeight > 0)) return;
 
     const availableHeight = baseMaxHeight - headerHeight;
-    if (availableHeight < rowHeight) return;
-    const visibleRows = Math.max(1, Math.floor(availableHeight / rowHeight));
+    const visibleRows = Math.max(1, Math.floor(Math.max(0, availableHeight) / rowHeight));
     wrapper.style.maxHeight = `${headerHeight + (visibleRows * rowHeight)}px`;
   });
 }
