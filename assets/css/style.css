@@ -32,7 +32,7 @@
   --panel-body-padding-x: 18px;
   --table-row-height: 30px;
   --table-header-height: 32px;
-  --panel-row-body-height: calc(var(--table-header-height) + (10 * var(--table-row-height)));
+  --table-10-rows-height: calc(var(--table-header-height) + (10 * var(--table-row-height)));
 
   --font-sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
   --font-mono:     'Cascadia Code', 'Fira Code', 'Consolas', monospace;
@@ -438,7 +438,7 @@ body {
 .chart-container {
   position: relative;
   flex: 1;
-  min-height: calc(var(--panel-row-body-height) - (2 * var(--panel-body-padding-y)));
+  min-height: calc(var(--table-10-rows-height) - (2 * var(--panel-body-padding-y)));
 }
 
 .chart-container canvas {
@@ -451,7 +451,7 @@ body {
 /* ── Data Tables (Yearly / Weekly / Monthly) ─────────────── */
 .data-table-wrapper {
   overflow-y: auto;
-  max-height: var(--panel-row-body-height);
+  max-height: var(--table-10-rows-height);
   flex: 1;
 }
 
@@ -526,7 +526,7 @@ body {
   align-items: flex-start;
   flex-wrap: wrap;
   flex: 1;
-  min-height: calc(var(--panel-row-body-height) - (2 * var(--panel-body-padding-y)));
+  min-height: calc(var(--table-10-rows-height) - (2 * var(--panel-body-padding-y)));
 }
 
 .pie-canvas-wrap {
@@ -540,7 +540,7 @@ body {
   flex: 1;
   min-width: 180px;
   overflow-y: auto;
-  max-height: var(--panel-row-body-height);
+  max-height: var(--table-10-rows-height);
 }
 
 .pie-legend-item {
