@@ -529,6 +529,11 @@ function processData(raw) {
 
   // Full line of best fit for weekly (all actual weeks, no forecast)
   const weekBestFit = weekXs.map(x => Math.max(0, regPredict(regWeekly, x)));
+  const weekBestFitStart = weekBestFit[0];
+  const weekBestFitEnd = weekBestFit[nWeeks - 1];
+  const weekBestFitGrowth = (nWeeks > 1 && weekBestFitStart > 0)
+    ? ((weekBestFitEnd - weekBestFitStart) / weekBestFitStart) * 100
+    : null;
 
   // Forecast next N weeks from the last date in the last week
   const lastWeekDate = records
@@ -570,6 +575,11 @@ function processData(raw) {
 
   // Full line of best fit for monthly (all actual months, no forecast)
   const monBestFit = monXs.map(x => Math.max(0, regPredict(regMonthly, x)));
+  const monBestFitStart = monBestFit[0];
+  const monBestFitEnd = monBestFit[nMons - 1];
+  const monBestFitGrowth = (nMons > 1 && monBestFitStart > 0)
+    ? ((monBestFitEnd - monBestFitStart) / monBestFitStart) * 100
+    : null;
 
   // Forecast next N months
   const lastMonKey = monKeys.length ? monKeys[monKeys.length - 1] : currentMon;
@@ -721,11 +731,11 @@ function processData(raw) {
     daily60Keys, daily60Vals,
     n60, daily60ForecastDates,
     // weekly
-    weekAllKeys, weekBarData, weekRegLine, weekBestFit,
+    weekAllKeys, weekBarData, weekRegLine, weekBestFit, weekBestFitGrowth,
     weekKeys, weekVals, weekForecastKeys,
     nWeeks,
     // monthly
-    monAllKeys, monBarData, monRegLine, monBestFit,
+    monAllKeys, monBarData, monRegLine, monBestFit, monBestFitGrowth,
     monKeys, monVals, monForecastKeys,
     nMons,
     // weekly cumulative comparison
@@ -1277,7 +1287,7 @@ function renderWeeklyChart(d) {
         },
         {
           type: 'line',
-          label: 'Line of Best Fit',
+          label: `Line of Best Fit (Growth ${fmtPct(d.weekBestFitGrowth)})`,
           data: d.weekBestFit,
           borderColor: COLORS.amber,
           backgroundColor: 'transparent',
@@ -1336,7 +1346,7 @@ function renderMonthlyChart(d) {
         },
         {
           type: 'line',
-          label: 'Line of Best Fit',
+          label: `Line of Best Fit (Growth ${fmtPct(d.monBestFitGrowth)})`,
           data: d.monBestFit,
           borderColor: COLORS.amber,
           backgroundColor: 'transparent',
